@@ -371,6 +371,20 @@ export default function Integrations() {
                   <span className="text-sm">Not connected</span>
                 </div>
                 <p className="text-sm text-navy-400">Connect your LinkedIn account via OAuth to import leads and sync profile data.</p>
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 text-xs space-y-1.5">
+                  <p className="font-medium text-amber-400 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    LinkedIn App Setup Required
+                  </p>
+                  <p className="text-navy-400">If clicking "Connect LinkedIn" shows an error, your LinkedIn app is in <strong className="text-navy-200">Development Mode</strong>. Fix this in the LinkedIn Developer Portal:</p>
+                  <ol className="text-navy-400 space-y-1 ml-4 list-decimal">
+                    <li>Go to <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener noreferrer" className="text-[#0A66C2] hover:underline">linkedin.com/developers/apps</a></li>
+                    <li>Select your app → <strong className="text-navy-200">Settings</strong> tab</li>
+                    <li>Under "Authorized users to test the app", add your email</li>
+                    <li>Click "Verify" and check your email</li>
+                  </ol>
+                  <p className="text-navy-500">Or use CSV/paste import below as a working alternative.</p>
+                </div>
                 <div className="bg-navy-800/30 rounded-lg p-3 text-xs text-navy-400 space-y-1.5">
                   <p className="font-medium text-navy-200 mb-1">How it works:</p>
                   <div className="flex items-start gap-2">
