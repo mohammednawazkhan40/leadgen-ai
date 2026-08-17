@@ -11,7 +11,14 @@ export default function LinkedInCallback() {
   const [message, setMessage] = useState('Connecting to LinkedIn...');
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    let params = new URLSearchParams(window.location.search);
+    if (!params.has('code') && !params.has('error') && window.location.hash) {
+      const hashContent = window.location.hash.substring(1);
+      const qIndex = hashContent.indexOf('?');
+      if (qIndex !== -1) {
+        params = new URLSearchParams(hashContent.substring(qIndex + 1));
+      }
+    }
     const code = params.get('code');
     const error = params.get('error');
 
@@ -53,7 +60,7 @@ export default function LinkedInCallback() {
         setStatus('success');
         setMessage(`Connected as ${profile.firstName} ${profile.lastName}!`);
 
-        setTimeout(() => navigate('/#/app/integrations'), 2000);
+        setTimeout(() => navigate('/app/integrations'), 2000);
       } catch (e) {
         setStatus('error');
         setMessage((e as Error).message || 'Failed to connect to LinkedIn.');
@@ -87,7 +94,7 @@ export default function LinkedInCallback() {
             <h2 className="text-xl font-bold text-white mb-2">Connection Failed</h2>
             <p className="text-gray-400 mb-6">{message}</p>
             <button
-              onClick={() => navigate('/#/app/integrations')}
+              onClick={() => navigate('/app/integrations')}
               className="btn-primary px-6 py-2 rounded-lg"
             >
               Back to Integrations
