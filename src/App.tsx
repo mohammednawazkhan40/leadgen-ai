@@ -16,6 +16,7 @@ import Outreach from './pages/Outreach';
 import Analytics from './pages/Analytics';
 import Integrations from './pages/Integrations';
 import Settings from './pages/Settings';
+import LinkedInCallback from './pages/LinkedInCallback';
 
 function DashboardRoutes() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/app/*" element={<DashboardRoutes />} />
+            <Route path="/linkedin-callback" element={<LinkedInCallback />} />
             <Route path="dashboard" element={<Navigate to="/app/dashboard" replace />} />
             <Route path="leads" element={<Navigate to="/app/leads" replace />} />
             <Route path="projects" element={<Navigate to="/app/projects" replace />} />

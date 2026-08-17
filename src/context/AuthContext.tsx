@@ -58,12 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signUp(email: string, password: string, fullName: string, company?: string) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName, company: company || 'Nexus AI Solutions' } },
     });
-    return { error };
+    if (error) return { error };
+    if (data.user && !data.session) {
+      return { error: null, needsConfirmation: true };
+    }
+    return { error: null, needsConfirmation: false };
   }
 
   async function signIn(email: string, password: string) {
