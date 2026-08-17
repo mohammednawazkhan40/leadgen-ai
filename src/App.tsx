@@ -1,4 +1,5 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
 import DashboardLayout from './components/layout/DashboardLayout';
 import Landing from './pages/Landing';
@@ -29,7 +30,7 @@ function DashboardRoutes() {
         <Route path="analytics" element={<Analytics />} />
         <Route path="integrations" element={<Integrations />} />
         <Route path="settings" element={<Settings />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
       </Routes>
     </DashboardLayout>
   );
@@ -38,20 +39,22 @@ function DashboardRoutes() {
 export default function App() {
   return (
     <HashRouter>
-      <AppProvider>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/app/*" element={<DashboardRoutes />} />
-          <Route path="dashboard" element={<Navigate to="/app/dashboard" replace />} />
-          <Route path="leads" element={<Navigate to="/app/leads" replace />} />
-          <Route path="projects" element={<Navigate to="/app/projects" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AppProvider>
+      <AuthProvider>
+        <AppProvider>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/app/*" element={<DashboardRoutes />} />
+            <Route path="dashboard" element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="leads" element={<Navigate to="/app/leads" replace />} />
+            <Route path="projects" element={<Navigate to="/app/projects" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AppProvider>
+      </AuthProvider>
     </HashRouter>
   );
 }

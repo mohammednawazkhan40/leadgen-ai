@@ -1,20 +1,33 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Mail, ArrowLeft } from "lucide-react";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Mail, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useApp } from '../context/AppContext';
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { resetPassword } = useAuth();
+  const { addToast } = useApp();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
+    const { error } = await resetPassword(email);
+    setLoading(false);
+    if (error) {
+      addToast('error', error.message);
+    } else {
+      addToast('success', 'Password reset email sent! Check your inbox.');
+      setSubmitted(true);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="bg-[#111827] border border-gray-800 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-[#111827]/80 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl shadow-blue-500/5">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-1">
               Lead<span className="text-blue-500">Gen</span> AI
@@ -24,19 +37,20 @@ export default function ForgotPassword() {
 
           {submitted ? (
             <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto">
-                <Mail className="w-8 h-8 text-blue-500" />
+              <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle className="w-8 h-8 text-emerald-500" />
               </div>
-              <p className="text-gray-300">
-                We've sent a password reset link to{" "}
-                <span className="text-white font-medium">{email}</span>. Please
-                check your inbox.
+              <h2 className="text-xl font-semibold text-white">Check your email</h2>
+              <p className="text-gray-400">
+                We've sent a password reset link to{' '}
+                <span className="text-white font-medium">{email}</span>.
+                Follow the link in the email to set a new password.
               </p>
               <button
-                onClick={() => setSubmitted(false)}
+                onClick={() => { setSubmitted(false); setEmail(''); }}
                 className="btn-primary w-full mt-4"
               >
-                Resend Email
+                Send Another Email
               </button>
             </div>
           ) : (
@@ -59,12 +73,24 @@ export default function ForgotPassword() {
                     placeholder="you@example.com"
                     className="input-field w-full pl-11"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary w-full">
-                Send Reset Link
+              <button
+                type="submit"
+                className="btn-primary w-full flex items-center justify-center gap-2"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Reset Link'
+                )}
               </button>
             </form>
           )}

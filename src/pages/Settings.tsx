@@ -38,6 +38,8 @@ const roleColors: Record<UserRole, string> = {
   admin: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   manager: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   user: 'bg-navy-600/30 text-navy-300 border-navy-600/30',
+  member: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  viewer: 'bg-navy-600/30 text-navy-400 border-navy-600/30',
 };
 
 function getInitials(name: string) {

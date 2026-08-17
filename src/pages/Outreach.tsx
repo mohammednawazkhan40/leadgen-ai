@@ -123,7 +123,7 @@ export default function Outreach() {
   };
 
   const startEdit = (c: Campaign) => {
-    setForm({ name: c.name, category: c.category, template: c.template });
+    setForm({ name: c.name, category: c.category || '', template: c.template });
     setEditing(c.id);
     setShowNew(true);
     setPreview(false);
@@ -388,7 +388,7 @@ export default function Outreach() {
                   <td className="py-3 text-right">{or}%</td>
                   <td className="py-3 text-right">{rr}%</td>
                   <td className="py-3 text-right">{c.bookedCall}</td>
-                  <td className="py-3 text-navy-400">{formatDate(c.lastUpdated)}</td>
+                  <td className="py-3 text-navy-400">{formatDate(c.lastUpdated || '')}</td>
                   <td className="py-3">
                     <div className="flex gap-1 justify-end">
                       <button onClick={() => startEdit(c)} className="p-1.5 rounded-lg hover:bg-navy-700 text-navy-400 hover:text-white transition-colors" title="Edit">
@@ -428,7 +428,7 @@ export default function Outreach() {
                     <h4 className="font-medium truncate">{c.name}</h4>
                     <span className={`badge text-xs flex-shrink-0 ${statusColor(c.status)}`}>{c.status}</span>
                   </div>
-                  <p className="text-xs text-navy-400">{c.category} · {formatDate(c.lastUpdated)}</p>
+                  <p className="text-xs text-navy-400">{c.category} · {formatDate(c.lastUpdated || '')}</p>
                 </div>
                 <button
                   onClick={() => setExpandedCampaign(isExpanded ? null : c.id)}

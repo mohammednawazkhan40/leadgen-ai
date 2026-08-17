@@ -136,7 +136,7 @@ export default function LeadDetail() {
               <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-gray-500" /><div><p className="text-gray-500 text-xs">Project Type</p><p className="text-white capitalize">{lead.projectType.replace('_', ' ')}</p></div></div>
               <div className="flex items-center gap-2"><DollarSign className="w-4 h-4 text-gray-500" /><div><p className="text-gray-500 text-xs">Budget</p><p className="text-white">{formatCurrency(lead.budgetMin || 0)}-{formatCurrency(lead.budgetMax || 0)}</p></div></div>
               <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-500" /><div><p className="text-gray-500 text-xs">Posted</p><p className="text-white">{formatDate(lead.postedDate)}</p></div></div>
-              <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-gray-500" /><div><p className="text-gray-500 text-xs">Found</p><p className="text-white">{formatDate(lead.foundDate)}</p></div></div>
+              <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-gray-500" /><div><p className="text-gray-500 text-xs">Found</p><p className="text-white">{formatDate(lead.foundDate || lead.postedDate)}</p></div></div>
               <div className="flex items-center gap-2"><Building2 className="w-4 h-4 text-gray-500" /><div><p className="text-gray-500 text-xs">Category</p><p className="text-white">{lead.aiCategory}</p></div></div>
               <div className="flex items-center gap-2"><User className="w-4 h-4 text-gray-500" /><div><p className="text-gray-500 text-xs">Owner</p><p className="text-white">{lead.owner?.name || 'Unassigned'}</p></div></div>
             </div>

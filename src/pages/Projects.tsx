@@ -49,6 +49,8 @@ const COLUMN_TOP_BORDER: Record<LeadStatus, string> = {
   proposal_sent: 'border-t-cyan-400',
   won: 'border-t-green-400',
   lost: 'border-t-red-400',
+  responded: 'border-t-orange-400',
+  proposal: 'border-t-teal-400',
 };
 
 const OWNER_COLORS = [
@@ -127,7 +129,7 @@ export default function Projects() {
   const filtered = projects.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.company.toLowerCase().includes(search.toLowerCase());
+      (p.company || '').toLowerCase().includes(search.toLowerCase());
     const matchesPriority = filterPriority === 'all' || p.priority === filterPriority;
     const matchesStatus = filterStatus === 'all' || p.status === filterStatus;
     const matchesOwner = filterOwner === 'all' || (p.owner && p.owner.id === filterOwner);
@@ -440,13 +442,13 @@ export default function Projects() {
                             <div className="flex items-start justify-between mb-2.5">
                               <div className="flex items-center gap-2.5">
                                 <div
-                                  className={`w-9 h-9 rounded-full border flex items-center justify-center text-xs font-bold flex-shrink-0 ${getCompanyColor(project.company)}`}
+                                  className={`w-9 h-9 rounded-full border flex items-center justify-center text-xs font-bold flex-shrink-0 ${getCompanyColor(project.company || '')}`}
                                 >
-                                  {project.company[0]}
+                                  {(project.company || '')[0] || '?'}
                                 </div>
                                 <div className="min-w-0">
                                   <p className="text-sm font-semibold text-white truncate">{project.name}</p>
-                                  <p className="text-xs text-navy-400 truncate">{project.company}</p>
+                                  <p className="text-xs text-navy-400 truncate">{project.company || ''}</p>
                                 </div>
                               </div>
                               <GripVertical className="w-4 h-4 text-navy-600 flex-shrink-0 mt-1" />
@@ -486,16 +488,18 @@ export default function Projects() {
                               )}
                             </div>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate('/app/leads/' + project.lead.id);
-                              }}
-                              className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs text-accent-400 hover:text-accent-300 bg-accent-600/10 hover:bg-accent-600/20 rounded-md py-1.5 transition-colors"
-                            >
-                              <Eye className="w-3 h-3" />
-                              View
-                            </button>
+                            {project.lead && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate('/app/leads/' + project.lead!.id);
+                                }}
+                                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs text-accent-400 hover:text-accent-300 bg-accent-600/10 hover:bg-accent-600/20 rounded-md py-1.5 transition-colors"
+                              >
+                                <Eye className="w-3 h-3" />
+                                View
+                              </button>
+                            )}
                           </div>
 
                           {activeCardId === project.id && (
@@ -575,14 +579,14 @@ export default function Projects() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <div
-                            className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${getCompanyColor(project.company)}`}
+                            className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${getCompanyColor(project.company || '')}`}
                           >
-                            {project.company[0]}
+                            {(project.company || '')[0] || '?'}
                           </div>
                           <span className="font-medium text-white truncate max-w-[200px]">{project.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-navy-300 truncate max-w-[160px]">{project.company}</td>
+                      <td className="px-4 py-3 text-navy-300 truncate max-w-[160px]">{project.company || ''}</td>
                       <td className="px-4 py-3 text-right font-bold text-accent-400">{formatCurrency(project.value)}</td>
                       <td className="px-4 py-3 text-center">
                         <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${getPriorityColor(project.priority)}`}>
@@ -618,13 +622,15 @@ export default function Projects() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => navigate('/app/leads/' + project.lead.id)}
-                            className="p-1.5 rounded-lg hover:bg-navy-800 text-navy-400 hover:text-accent-400 transition-colors"
-                            title="View lead"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          {project.lead && (
+                            <button
+                              onClick={() => navigate('/app/leads/' + project.lead!.id)}
+                              className="p-1.5 rounded-lg hover:bg-navy-800 text-navy-400 hover:text-accent-400 transition-colors"
+                              title="View lead"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          )}
                           <div className="relative">
                             <button
                               onClick={() => setActiveCardId(activeCardId === project.id ? null : project.id)}

@@ -1,9 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { useApp } from "../context/AppContext";
 
 export default function SignIn() {
   const navigate = useNavigate();
+  const { signIn, signInWithGoogle, loading: authLoading } = useAuth();
+  const { addToast } = useApp();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -11,21 +16,33 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      addToast("error", "Please enter both email and password.");
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigate("/app/dashboard");
-    }, 1000);
+    const { error } = await signIn(email, password);
+    setLoading(false);
+    if (error) {
+      addToast("error", error.message);
+      return;
+    }
+    addToast("success", "Signed in successfully!");
+    navigate("/#/app/dashboard");
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    setTimeout(() => {
-      setGoogleLoading(false);
-      navigate("/app/dashboard");
-    }, 2000);
+    const { error } = await signInWithGoogle();
+    setGoogleLoading(false);
+    if (error) {
+      addToast("error", error.message);
+      return;
+    }
+    addToast("success", "Signed in successfully!");
+    navigate("/#/app/dashboard");
   };
 
   return (
@@ -49,6 +66,7 @@ export default function SignIn() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
+                  disabled={loading || authLoading}
                   className="input-field w-full pl-11"
                 />
               </div>
@@ -63,6 +81,7 @@ export default function SignIn() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
+                  disabled={loading || authLoading}
                   className="input-field w-full pl-11 pr-11"
                 />
                 <button
@@ -81,6 +100,7 @@ export default function SignIn() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={loading || authLoading}
                   className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
                 />
                 <span className="text-sm text-gray-400">Remember me</span>
@@ -90,8 +110,8 @@ export default function SignIn() {
               </Link>
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</> : "Sign In"}
+            <button type="submit" disabled={loading || authLoading} className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
+              {loading || authLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</> : "Sign In"}
             </button>
           </form>
 
@@ -106,7 +126,7 @@ export default function SignIn() {
 
           <button
             onClick={handleGoogleSignIn}
-            disabled={googleLoading}
+            disabled={googleLoading || loading || authLoading}
             className="btn-secondary w-full flex items-center justify-center gap-3 disabled:opacity-50"
           >
             {googleLoading ? (
@@ -126,6 +146,12 @@ export default function SignIn() {
             Don't have an account?{" "}
             <Link to="/signup" className="text-blue-500 hover:text-blue-400 font-medium">Sign up</Link>
           </p>
+
+          <div className="mt-4 pt-4 border-t border-gray-800 text-center">
+            <p className="text-xs text-gray-500">
+              Demo credentials: admin@leadgen.ai / password123
+            </p>
+          </div>
         </div>
       </div>
     </div>

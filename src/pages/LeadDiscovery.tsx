@@ -38,8 +38,8 @@ export default function LeadDiscovery() {
     if (locationFilter) result = result.filter(l => l.location.toLowerCase().includes(locationFilter.toLowerCase()));
     if (budgetMin) result = result.filter(l => (l.budgetMax || 0) >= Number(budgetMin));
     if (budgetMax) result = result.filter(l => (l.budgetMin || 0) <= Number(budgetMax));
-    if (minScore) result = result.filter(l => l.leadScore >= Number(minScore));
-    if (sortBy === 'score') result.sort((a, b) => b.leadScore - a.leadScore);
+    if (minScore) result = result.filter(l => (l.scoreOverall || l.leadScore || 0) >= Number(minScore));
+    if (sortBy === 'score') result.sort((a, b) => (b.scoreOverall || b.leadScore || 0) - (a.scoreOverall || a.leadScore || 0));
     else if (sortBy === 'budget') result.sort((a, b) => (b.budgetMax || 0) - (a.budgetMax || 0));
     else if (sortBy === 'date') result.sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime());
     return result;
@@ -160,7 +160,7 @@ export default function LeadDiscovery() {
                     <p className="text-xs text-gray-400 truncate">{lead.company} · {lead.contactName}</p>
                   </div>
                 </div>
-                <span className={`badge text-xs shrink-0 ${lead.leadScore >= 80 ? 'bg-emerald-500/10 text-emerald-400' : lead.leadScore >= 60 ? 'bg-blue-500/10 text-blue-400' : 'bg-amber-500/10 text-amber-400'}`}>{lead.leadScore}</span>
+                <span className={`badge text-xs shrink-0 ${(lead.scoreOverall || lead.leadScore || 0) >= 80 ? 'bg-emerald-500/10 text-emerald-400' : (lead.scoreOverall || lead.leadScore || 0) >= 60 ? 'bg-blue-500/10 text-blue-400' : 'bg-amber-500/10 text-amber-400'}`}>{lead.scoreOverall || lead.leadScore || 0}</span>
               </div>
               <p className="text-xs text-gray-400 mb-3 line-clamp-2">{lead.excerpt}</p>
               <div className="flex flex-wrap gap-1 mb-3">
@@ -215,7 +215,7 @@ export default function LeadDiscovery() {
                   <td className="py-3"><span className="badge bg-blue-500/10 text-blue-400 text-xs">{lead.aiCategory}</span></td>
                   <td className="py-3 text-gray-400 text-xs">{lead.location}</td>
                   <td className="py-3 text-gray-300 text-xs">{formatCurrency(lead.budgetMin || 0)}-{formatCurrency(lead.budgetMax || 0)}</td>
-                  <td className="py-3"><span className={`font-medium ${getScoreColor(lead.leadScore)}`}>{lead.leadScore}</span></td>
+                  <td className="py-3"><span className={`font-medium ${getScoreColor(lead.scoreOverall || lead.leadScore || 0)}`}>{lead.scoreOverall || lead.leadScore || 0}</span></td>
                   <td className="py-3 text-gray-400 text-xs">{formatDate(lead.postedDate)}</td>
                   <td className="py-3">
                     <div className="flex gap-1">

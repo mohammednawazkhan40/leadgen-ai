@@ -79,10 +79,10 @@ export default function SavedLeads() {
 
     result.sort((a, b) => {
       switch (sortBy) {
-        case 'score_desc': return b.leadScore - a.leadScore;
-        case 'score_asc': return a.leadScore - b.leadScore;
-        case 'date_desc': return new Date(b.foundDate).getTime() - new Date(a.foundDate).getTime();
-        case 'date_asc': return new Date(a.foundDate).getTime() - new Date(b.foundDate).getTime();
+        case 'score_desc': return (b.leadScore || b.scoreOverall || 0) - (a.leadScore || a.scoreOverall || 0);
+        case 'score_asc': return (a.leadScore || a.scoreOverall || 0) - (b.leadScore || b.scoreOverall || 0);
+        case 'date_desc': return new Date(b.foundDate || new Date().toISOString()).getTime() - new Date(a.foundDate || new Date().toISOString()).getTime();
+        case 'date_asc': return new Date(a.foundDate || new Date().toISOString()).getTime() - new Date(b.foundDate || new Date().toISOString()).getTime();
         case 'company_asc': return a.company.localeCompare(b.company);
         case 'company_desc': return b.company.localeCompare(a.company);
         case 'value_desc': return (b.budgetMax || 0) - (a.budgetMax || 0);
@@ -95,7 +95,7 @@ export default function SavedLeads() {
   }, [savedLeads, searchQuery, sortBy, categoryFilter, statusFilter]);
 
   const totalCount = savedLeads.length;
-  const highPriorityCount = savedLeads.filter((l) => l.leadScore > 80).length;
+  const highPriorityCount = savedLeads.filter((l) => (l.leadScore || l.scoreOverall || 0) > 80).length;
   const needsFollowUpCount = savedLeads.filter(
     (l) => l.status === 'reviewing'
   ).length;
@@ -152,7 +152,7 @@ export default function SavedLeads() {
     const selectedLeads = filteredLeads.filter(l => selected.has(l.id));
     const csv = [
       'Title,Company,Contact,Score,Status,Budget',
-      ...selectedLeads.map(l => `"${l.title}","${l.company}","${l.contactName}",${l.leadScore},${l.status},"${l.budgetMin}-${l.budgetMax}"`)
+      ...selectedLeads.map(l => `"${l.title}","${l.company}","${l.contactName}",${l.leadScore || l.scoreOverall || 0},${l.status},"${l.budgetMin}-${l.budgetMax}"`)
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -360,8 +360,8 @@ export default function SavedLeads() {
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`font-semibold ${getScoreColor(lead.leadScore)}`}>
-                        {lead.leadScore}
+                      <span className={`font-semibold ${getScoreColor(lead.leadScore || lead.scoreOverall || 0)}`}>
+                        {lead.leadScore || lead.scoreOverall || 0}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-navy-300 text-sm">{formatBudgetRange(lead)}</td>
@@ -371,7 +371,7 @@ export default function SavedLeads() {
                       </span>
                     </td>
                     <td className="px-5 py-3 text-navy-400 text-xs">{lead.source}</td>
-                    <td className="px-5 py-3 text-navy-400 text-xs">{formatDate(lead.foundDate)}</td>
+                    <td className="px-5 py-3 text-navy-400 text-xs">{formatDate(lead.foundDate || new Date().toISOString())}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-1">
                         <Link

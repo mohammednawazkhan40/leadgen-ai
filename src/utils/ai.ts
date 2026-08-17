@@ -35,7 +35,7 @@ export function generateOutreachMessage(lead: Lead, senderName: string, company:
     ? `\n\nWe understand the investment is in the ${lead.budgetMin >= 1000 ? `$${Math.round(lead.budgetMin/1000)}K` : `$${lead.budgetMin}`}${lead.budgetMax ? `-$${lead.budgetMax >= 1000 ? `${Math.round(lead.budgetMax/1000)}K` : lead.budgetMax}` : ''} range. We can structure our engagement to maximize ROI within your budget.`
     : '';
 
-  const urgencyLine = lead.urgencyScore > 80
+  const urgencyLine = (lead.urgencyScore || 0) > 80
     ? '\n\nI understand timing is critical, and we can mobilize our team quickly to meet your deadline.'
     : '';
 
@@ -56,8 +56,8 @@ export function generateLeadSummary(lead: Lead): string {
   const budget = lead.budgetMin
     ? `The budget is estimated at $${lead.budgetMin >= 1000 ? `${Math.round(lead.budgetMin/1000)}K` : lead.budgetMin}${lead.budgetMax ? `-$${lead.budgetMax >= 1000 ? `${Math.round(lead.budgetMax/1000)}K` : lead.budgetMax}` : ''}.`
     : 'Budget details are pending confirmation.';
-  const urgency = lead.urgencyScore > 80 ? 'This project has high urgency.' : lead.urgencyScore > 60 ? 'Moderate timeline expectations.' : 'Flexible timeline.';
-  const fit = lead.technicalFit > 85 ? 'Excellent technical fit for our team.' : lead.technicalFit > 70 ? 'Good technical alignment.' : 'May require additional expertise.';
+  const urgency = (lead.urgencyScore || 0) > 80 ? 'This project has high urgency.' : (lead.urgencyScore || 0) > 60 ? 'Moderate timeline expectations.' : 'Flexible timeline.';
+  const fit = (lead.technicalFit || 0) > 85 ? 'Excellent technical fit for our team.' : (lead.technicalFit || 0) > 70 ? 'Good technical alignment.' : 'May require additional expertise.';
 
   return `${company} is seeking ${lead.aiCategory.toLowerCase()} expertise for "${lead.title}". Key skills required: ${skills}. ${budget} ${urgency} ${fit} Contact: ${lead.contactName}${lead.contactTitle ? `, ${lead.contactTitle}` : ''}. Located in ${lead.location}, ${lead.remoteType} arrangement. Source: ${lead.source}.`;
 }
