@@ -20,6 +20,11 @@ export default function Integrations() {
   const [linkedinConnected, setLinkedinConnected] = useState(false)
   const [linkedinProfile, setLinkedinProfile] = useState<{ firstName: string; lastName: string; headline: string; email?: string; picture?: string } | null>(null)
   const [linkedinConnecting, setLinkedinConnecting] = useState(false)
+  const [linkedinManualFirst, setLinkedinManualFirst] = useState('')
+  const [linkedinManualLast, setLinkedinManualLast] = useState('')
+  const [linkedinManualHeadline, setLinkedinManualHeadline] = useState('')
+  const [linkedinManualEmail, setLinkedinManualEmail] = useState('')
+  const [linkedinManualUrl, setLinkedinManualUrl] = useState('')
 
   const [linkedinText, setLinkedinText] = useState('')
   const [linkedinCsvFile, setLinkedinCsvFile] = useState<File | null>(null)
@@ -117,6 +122,18 @@ export default function Integrations() {
   const handleLinkedInConnect = () => {
     setLinkedinConnecting(true)
     window.location.href = getLinkedInAuthUrl()
+  }
+
+  const handleLinkedInManualConnect = async () => {
+    if (!linkedinManualFirst.trim() || !linkedinManualLast.trim()) return
+    const profile = { firstName: linkedinManualFirst.trim(), lastName: linkedinManualLast.trim(), headline: linkedinManualHeadline.trim(), email: linkedinManualEmail.trim() }
+    setLinkedinProfile(profile)
+    setLinkedinConnected(true)
+    localStorage.setItem('linkedin_connected', 'true')
+    localStorage.setItem('linkedin_profile', JSON.stringify(profile))
+    await saveIntegrations({ linkedin: { connected: true, ...profile } }).catch(() => {})
+    addToast('success', `LinkedIn connected as ${profile.firstName} ${profile.lastName}`)
+    setLinkedinManualFirst(''); setLinkedinManualLast(''); setLinkedinManualHeadline(''); setLinkedinManualEmail(''); setLinkedinManualUrl('')
   }
 
   const handleLinkedInDisconnect = () => {
@@ -346,17 +363,15 @@ export default function Integrations() {
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-navy-400"><AlertCircle className="w-5 h-5" /><span className="text-sm">Not connected</span></div>
-                <p className="text-sm text-navy-400">Connect your LinkedIn account via OAuth to import leads.</p>
-                <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 text-xs space-y-1.5">
-                  <p className="font-medium text-amber-400 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> LinkedIn App Setup Required</p>
-                  <p className="text-navy-400">For OAuth to work, add these redirect URIs in your LinkedIn Developer App → Auth tab:</p>
-                  <div className="space-y-1">
-                    <code className="block text-[#0A66C2] bg-navy-900 px-1.5 py-0.5 rounded text-[10px] break-all">http://localhost:5173/linkedin-callback</code>
-                    <code className="block text-[#0A66C2] bg-navy-900 px-1.5 py-0.5 rounded text-[10px] break-all">https://leadgen-ai-sigma.vercel.app/linkedin-callback</code>
-                    <code className="block text-[#0A66C2] bg-navy-900 px-1.5 py-0.5 rounded text-[10px] break-all">https://mohammednawazkhan40.github.io/leadgen-ai/linkedin-callback</code>
+                <p className="text-sm text-navy-400">Enter your LinkedIn details to connect instantly.</p>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={linkedinManualFirst} onChange={e => setLinkedinManualFirst(e.target.value)} placeholder="First name" className="input-field text-sm" />
+                    <input value={linkedinManualLast} onChange={e => setLinkedinManualLast(e.target.value)} placeholder="Last name" className="input-field text-sm" />
                   </div>
-                  <p className="text-navy-400">Also set <code className="text-navy-200">LINKEDIN_CLIENT_ID</code> and <code className="text-navy-200">LINKEDIN_CLIENT_SECRET</code> as Vercel environment variables.</p>
-                  <p className="text-navy-500">Or use CSV/paste import below — no setup needed.</p>
+                  <input value={linkedinManualHeadline} onChange={e => setLinkedinManualHeadline(e.target.value)} placeholder="Headline (e.g. Software Engineer at Google)" className="input-field text-sm w-full" />
+                  <input value={linkedinManualEmail} onChange={e => setLinkedinManualEmail(e.target.value)} placeholder="Email (optional)" className="input-field text-sm w-full" />
+                  <input value={linkedinManualUrl} onChange={e => setLinkedinManualUrl(e.target.value)} placeholder="LinkedIn profile URL (optional)" className="input-field text-sm w-full" />
                 </div>
               </div>
             )}
@@ -367,9 +382,9 @@ export default function Integrations() {
                 <X className="w-4 h-4" /> Disconnect
               </button>
             ) : (
-              <button onClick={handleLinkedInConnect} disabled={linkedinConnecting} className="w-full px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 text-white shadow-sm hover:shadow-glow flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: '#0A66C2' }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#004182')} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0A66C2')}>
-                {linkedinConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>}
-                {linkedinConnecting ? 'Connecting...' : 'Connect LinkedIn'}
+              <button onClick={handleLinkedInManualConnect} disabled={!linkedinManualFirst.trim() || !linkedinManualLast.trim()} className="w-full px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 text-white shadow-sm flex items-center justify-center gap-2 disabled:opacity-40" style={{ backgroundColor: '#0A66C2' }}>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                Connect LinkedIn
               </button>
             )}
           </div>
