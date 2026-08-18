@@ -46,6 +46,7 @@ const COLUMN_TOP_BORDER: Record<LeadStatus, string> = {
   reviewing: 'border-t-blue-400',
   qualified: 'border-t-emerald-400',
   contacted: 'border-t-amber-400',
+  follow_up: 'border-t-orange-400',
   discovery_call: 'border-t-purple-400',
   proposal_sent: 'border-t-cyan-400',
   won: 'border-t-green-400',

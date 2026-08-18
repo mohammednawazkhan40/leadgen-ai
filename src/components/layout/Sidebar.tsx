@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Search, Bookmark, FolderKanban, Send, BarChart3, Plug, Settings, Zap, X, Download } from 'lucide-react';
+import { LayoutDashboard, Search, BookOpen, Bookmark, FolderKanban, Send, BarChart3, Plug, Settings, Zap, X, Download } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/app/leads', label: 'Lead Discovery', icon: Search },
+  { to: '/app/dictionary', label: 'Lead Dictionary', icon: BookOpen },
+  { to: '/app/leads', label: 'AI Discovery', icon: Search },
   { to: '/app/saved', label: 'Saved Leads', icon: Bookmark },
   { to: '/app/projects', label: 'Projects', icon: FolderKanban },
   { to: '/app/outreach', label: 'Outreach', icon: Send },

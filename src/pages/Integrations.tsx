@@ -3,7 +3,8 @@ import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getLinkedInAuthUrl, parseLinkedInCSV, linkedinRowToLead } from '../services/linkedin'
-import { Upload, Download, CheckCircle, AlertCircle, Loader2, Link as LinkIcon, Settings, RefreshCw, FileText, ArrowRight, ExternalLink, Copy, X, Save } from 'lucide-react'
+import { Upload, Download, CheckCircle, AlertCircle, Loader2, Link as LinkIcon, Settings, RefreshCw, FileText, ArrowRight, ExternalLink, Copy, X, Save, Linkedin } from 'lucide-react'
+import LinkedInDemoConnector from '../components/LinkedInDemoConnector'
 
 interface IntegrationSettings {
   webhook?: { url: string; secret: string; events: string[]; connected: boolean }
@@ -67,6 +68,7 @@ export default function Integrations() {
   const [salesforceSaving, setSalesforceSaving] = useState(false)
   const [showHubspotKey, setShowHubspotKey] = useState(false)
   const [showSalesforceKey, setShowSalesforceKey] = useState(false)
+  const [showLinkedInDemo, setShowLinkedInDemo] = useState(false)
 
   const loadSettings = useCallback(async () => {
     if (!user) return
@@ -437,6 +439,26 @@ export default function Integrations() {
           )}
         </div>
       </div>
+
+      {/* LinkedIn Lead Sync Demo */}
+      {!showLinkedInDemo ? (
+        <div className="card border-blue-500/10 bg-blue-500/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center"><Linkedin className="w-5 h-5 text-white" /></div>
+              <div>
+                <h3 className="font-semibold text-white">LinkedIn Lead Sync</h3>
+                <p className="text-xs text-gray-400">Import LinkedIn lead form submissions directly (demo mode)</p>
+              </div>
+            </div>
+            <button onClick={() => setShowLinkedInDemo(true)} className="btn-primary text-sm flex items-center gap-1.5">
+              <Linkedin className="w-4 h-4" /> Sync Demo Leads
+            </button>
+          </div>
+        </div>
+      ) : (
+        <LinkedInDemoConnector onClose={() => setShowLinkedInDemo(false)} />
+      )}
 
       {/* CSV Import */}
       <div className="card">

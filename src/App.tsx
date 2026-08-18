@@ -16,6 +16,7 @@ import Outreach from './pages/Outreach';
 import Analytics from './pages/Analytics';
 import Integrations from './pages/Integrations';
 import Settings from './pages/Settings';
+import LeadDictionary from './pages/LeadDictionary';
 import LinkedInCallback from './pages/LinkedInCallback';
 
 function DashboardRoutes() {
@@ -23,6 +24,7 @@ function DashboardRoutes() {
     <DashboardLayout>
       <Routes>
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="dictionary" element={<LeadDictionary />} />
         <Route path="leads" element={<LeadDiscovery />} />
         <Route path="leads/:id" element={<LeadDetail />} />
         <Route path="saved" element={<SavedLeads />} />

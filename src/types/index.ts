@@ -1,12 +1,14 @@
 export type UserRole = 'admin' | 'manager' | 'user' | 'member' | 'viewer';
 
-export type LeadStatus = 'new' | 'reviewing' | 'qualified' | 'contacted' | 'discovery_call' | 'proposal_sent' | 'won' | 'lost' | 'responded' | 'proposal';
+export type LeadStatus = 'new' | 'reviewing' | 'qualified' | 'contacted' | 'follow_up' | 'won' | 'lost' | 'discovery_call' | 'proposal_sent' | 'responded' | 'proposal';
 
 export type ProjectType = 'full_time' | 'contract' | 'freelance' | 'consulting';
 
 export type RemoteType = 'remote' | 'hybrid' | 'onsite';
 
 export type OutreachStatus = 'draft' | 'sent' | 'opened' | 'replied' | 'booked_call' | 'unsubscribed' | 'active' | 'paused' | 'completed';
+
+export type LeadSource = 'manual' | 'ai_generated' | 'linkedin_lead_form' | 'csv_import';
 
 export interface User {
   id: string;
@@ -43,6 +45,9 @@ export interface Activity {
 
 export interface Lead {
   id: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
   title: string;
   company: string;
   companyLogo?: string;
@@ -50,10 +55,13 @@ export interface Lead {
   contactTitle?: string;
   contactEmail?: string;
   contactAvatar?: string;
+  email?: string;
+  phone?: string;
   description: string;
   excerpt?: string;
   skills: string[];
   location: string;
+  industry?: string;
   remoteType: RemoteType;
   projectType: ProjectType;
   budgetMin?: number;
@@ -73,16 +81,25 @@ export interface Lead {
   scoreReasons?: string[];
   source: string;
   sourceUrl?: string;
+  sourceReference?: string;
+  linkedinProfileUrl?: string;
   status: LeadStatus;
   aiCategory: string;
   owner?: TeamMember;
+  assignedTo?: string;
   tags: string[];
   notes: Note[];
   activities: Activity[];
   summary?: string;
   saved?: boolean;
+  archived?: boolean;
+  archivedAt?: string;
   reminder?: string;
   projectId?: string;
+  lastSyncedAt?: string;
+  consent?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Project {
@@ -163,4 +180,25 @@ export interface Toast {
   id: string;
   type: 'success' | 'error' | 'info' | 'warning';
   message: string;
+}
+
+export interface LinkedInCampaign {
+  id: string;
+  name: string;
+  status: 'active' | 'paused' | 'archived';
+  type: string;
+  impressions: number;
+  leads: number;
+  spend: number;
+  formName?: string;
+}
+
+export interface LinkedInForm {
+  id: string;
+  name: string;
+  campaignId: string;
+  campaignName: string;
+  status: 'active' | 'inactive';
+  leadsCount: number;
+  createdAt: string;
 }
