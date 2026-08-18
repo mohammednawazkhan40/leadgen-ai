@@ -21,14 +21,20 @@ export default function SignIn() {
       return;
     }
     setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
-    if (error) {
-      addToast("error", error.message);
-      return;
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        addToast("error", error.message);
+        return;
+      }
+      addToast("success", "Signed in successfully!");
+      navigate("/app/dashboard");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Sign in failed";
+      addToast("error", msg);
+    } finally {
+      setLoading(false);
     }
-    addToast("success", "Signed in successfully!");
-    navigate("/app/dashboard");
   };
 
   return (
