@@ -1,7 +1,16 @@
 import { supabase } from '../lib/supabase';
 
 const LINKEDIN_CLIENT_ID = import.meta.env.VITE_LINKEDIN_CLIENT_ID || '';
-const LINKEDIN_REDIRECT_URI = import.meta.env.VITE_LINKEDIN_REDIRECT_URI || `${window.location.origin}/linkedin-callback`;
+
+function getRedirectUri(): string {
+  const base = window.location.origin;
+  if (base.includes('localhost')) {
+    return 'http://localhost:5173/linkedin-callback';
+  }
+  return `${base}/leadgen-ai/linkedin-callback`;
+}
+
+const LINKEDIN_REDIRECT_URI = getRedirectUri();
 
 export function getLinkedInAuthUrl(): string {
   const scopes = ['openid', 'profile', 'email'].join(' ');

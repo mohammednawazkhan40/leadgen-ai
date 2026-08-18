@@ -8,7 +8,7 @@ BEGIN
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'company', 'Nexus AI Solutions')
+    COALESCE(NEW.raw_user_meta_data->>'company', 'LeadGen AI')
   );
   RETURN NEW;
 END;

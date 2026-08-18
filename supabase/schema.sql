@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT,
-  company TEXT DEFAULT 'Nexus AI Solutions',
+  company TEXT DEFAULT 'LeadGen AI',
   role TEXT DEFAULT 'admin' CHECK (role IN ('admin', 'manager', 'member')),
   avatar_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -25,7 +25,7 @@ BEGIN
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'company', 'Nexus AI Solutions')
+    COALESCE(NEW.raw_user_meta_data->>'company', 'LeadGen AI')
   );
   RETURN NEW;
 END;
