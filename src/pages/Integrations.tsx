@@ -349,14 +349,14 @@ export default function Integrations() {
                 <p className="text-sm text-navy-400">Connect your LinkedIn account via OAuth to import leads.</p>
                 <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 text-xs space-y-1.5">
                   <p className="font-medium text-amber-400 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> LinkedIn App Setup Required</p>
-                  <p className="text-navy-400">If "Connect LinkedIn" shows an error, the redirect URI may not match:</p>
-                  <ol className="text-navy-400 space-y-1 ml-4 list-decimal">
-                    <li>Go to <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener noreferrer" className="text-[#0A66C2] hover:underline">linkedin.com/developers/apps</a></li>
-                    <li>Select your app → <strong className="text-navy-200">Auth</strong> tab</li>
-                    <li>Under OAuth 2.0 settings → Authorized redirect URLs, add: <code className="text-[#0A66C2] bg-navy-900 px-1.5 py-0.5 rounded">http://localhost:5173/linkedin-callback</code></li>
-                    <li>Click <strong className="text-navy-200">Update</strong></li>
-                  </ol>
-                  <p className="text-navy-500">Or use CSV/paste import below.</p>
+                  <p className="text-navy-400">For OAuth to work, add these redirect URIs in your LinkedIn Developer App → Auth tab:</p>
+                  <div className="space-y-1">
+                    <code className="block text-[#0A66C2] bg-navy-900 px-1.5 py-0.5 rounded text-[10px] break-all">http://localhost:5173/linkedin-callback</code>
+                    <code className="block text-[#0A66C2] bg-navy-900 px-1.5 py-0.5 rounded text-[10px] break-all">https://leadgen-ai-sigma.vercel.app/linkedin-callback</code>
+                    <code className="block text-[#0A66C2] bg-navy-900 px-1.5 py-0.5 rounded text-[10px] break-all">https://mohammednawazkhan40.github.io/leadgen-ai/linkedin-callback</code>
+                  </div>
+                  <p className="text-navy-400">Also set <code className="text-navy-200">LINKEDIN_CLIENT_ID</code> and <code className="text-navy-200">LINKEDIN_CLIENT_SECRET</code> as Vercel environment variables.</p>
+                  <p className="text-navy-500">Or use CSV/paste import below — no setup needed.</p>
                 </div>
               </div>
             )}

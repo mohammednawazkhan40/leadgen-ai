@@ -7,6 +7,9 @@ function getRedirectUri(): string {
   if (base.includes('localhost')) {
     return 'http://localhost:5173/linkedin-callback';
   }
+  if (base.includes('vercel.app')) {
+    return `${base}/linkedin-callback`;
+  }
   return `${base}/leadgen-ai/linkedin-callback`;
 }
 
@@ -19,13 +22,16 @@ export function getLinkedInAuthUrl(): string {
 
 export async function exchangeLinkedInCode(code: string): Promise<{ access_token?: string; error?: string }> {
   try {
-    const { data, error } = await supabase.functions.invoke('linkedin-auth', {
-      body: { code, redirect_uri: LINKEDIN_REDIRECT_URI },
+    const res = await fetch(`${window.location.origin}/api/linkedin-callback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, redirect_uri: LINKEDIN_REDIRECT_URI }),
     });
-    if (error) return { error: error.message };
+    const data = await res.json();
+    if (!res.ok) return { error: data.error || 'Token exchange failed' };
     return data;
   } catch {
-    return { error: 'Edge function not deployed. Run: supabase functions deploy linkedin-auth' };
+    return { error: 'Failed to connect to server. Make sure LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET are set as Vercel environment variables.' };
   }
 }
 

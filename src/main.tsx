@@ -6,9 +6,10 @@ import './index.css'
 const path = window.location.pathname;
 const search = window.location.search;
 const isDirectCallback = path.endsWith('/linkedin-callback') || path.includes('/leadgen-ai/linkedin-callback');
+const isVercelCallback = path === '/linkedin-callback';
 const isGithubPagesRedirect = search.includes('/linkedin-callback') || search.includes('linkedin-callback');
 
-if ((isDirectCallback || isGithubPagesRedirect) && (search.includes('code=') || search.includes('&code='))) {
+if ((isDirectCallback || isVercelCallback || isGithubPagesRedirect) && (search.includes('code=') || search.includes('&code='))) {
   const allParams = new URLSearchParams(search.includes('/linkedin-callback') ? search.substring(search.indexOf('/linkedin-callback')) : search);
   const code = allParams.get('code');
   const error = allParams.get('error');

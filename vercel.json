@@ -4,12 +4,15 @@
   "framework": "vite",
   "installCommand": "npm install",
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/linkedin-callback", "destination": "/index.html" },
     { "source": "/leadgen-ai/linkedin-callback", "destination": "/leadgen-ai/index.html" },
-    { "source": "/leadgen-ai/(.*)", "destination": "/leadgen-ai/index.html" }
+    { "source": "/leadgen-ai/(.*)", "destination": "/leadgen-ai/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
-      "source": "/leadgen-ai/assets/(.*)",
+      "source": "/assets/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
