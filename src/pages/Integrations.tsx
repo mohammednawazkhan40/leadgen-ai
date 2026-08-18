@@ -376,14 +376,15 @@ export default function Integrations() {
                     <AlertCircle className="w-3.5 h-3.5" />
                     LinkedIn App Setup Required
                   </p>
-                  <p className="text-navy-400">If clicking "Connect LinkedIn" shows an error, your LinkedIn app is in <strong className="text-navy-200">Development Mode</strong>. Fix this in the LinkedIn Developer Portal:</p>
+                  <p className="text-navy-400">If clicking "Connect LinkedIn" shows "Bummer, something went wrong", the redirect URI likely doesn't match. Fix it:</p>
                   <ol className="text-navy-400 space-y-1 ml-4 list-decimal">
                     <li>Go to <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener noreferrer" className="text-[#0A66C2] hover:underline">linkedin.com/developers/apps</a></li>
-                    <li>Select your app → <strong className="text-navy-200">Settings</strong> tab</li>
-                    <li>Under "Authorized users to test the app", add your email</li>
-                    <li>Click "Verify" and check your email</li>
+                    <li>Select your app → click the <strong className="text-navy-200">Auth</strong> tab</li>
+                    <li>Scroll to <strong className="text-navy-200">OAuth 2.0 settings</strong></li>
+                    <li>Under <strong className="text-navy-200">Authorized redirect URLs for your app</strong>, add: <code className="text-[#0A66C2] bg-navy-900 px-1.5 py-0.5 rounded">http://localhost:5173/linkedin-callback</code></li>
+                    <li>Click <strong className="text-navy-200">Update</strong></li>
                   </ol>
-                  <p className="text-navy-500">Or use CSV/paste import below as a working alternative.</p>
+                  <p className="text-navy-500">URL must match exactly — no trailing slash, no https.</p>
                 </div>
                 <div className="bg-navy-800/30 rounded-lg p-3 text-xs text-navy-400 space-y-1.5">
                   <p className="font-medium text-navy-200 mb-1">How it works:</p>
