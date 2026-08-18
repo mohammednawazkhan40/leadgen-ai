@@ -1,20 +1,42 @@
 import { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { searchLeads } from '../services/api';
 import { formatCurrency, formatDate, getScoreColor } from '../utils/helpers';
-import { Search, Filter, Grid, List, MapPin, Calendar, DollarSign, Bookmark, Eye, Plus, X, ExternalLink, Building2, Briefcase, Loader2 } from 'lucide-react';
+import { Search, Filter, Grid, List, MapPin, Calendar, DollarSign, Bookmark, Eye, Plus, X, Briefcase, Loader2, Sparkles } from 'lucide-react';
+import type { Lead } from '../types';
 
-const suggestions = ['AI agent developer needed', 'LLM engineer for enterprise', 'RAG system architect', 'Chatbot development project', 'Machine learning consultant', 'NLP specialist for healthcare'];
 const aiCategories = ['All', 'AI Agents', 'LLMs', 'RAG', 'AI Automation', 'Machine Learning', 'Chatbot Development', 'NLP'];
 const industries = ['All', 'Technology', 'Finance', 'Healthcare', 'Manufacturing', 'Retail', 'Education'];
 const workTypes = ['Any', 'Remote', 'Hybrid', 'Onsite'];
 
+const sampleLeads: Array<Omit<Lead, 'id' | 'status' | 'saved' | 'notes' | 'activities' | 'scoreOverall' | 'scoreIntent' | 'scoreBudget' | 'scoreUrgency' | 'scoreTechnical' | 'tags'>> = [
+  { title: 'AI Agent Developer for Customer Support', company: 'TechFlow Inc', contactName: 'Sarah Chen', contactTitle: 'VP of Engineering', description: 'Looking for an experienced AI agent developer to build an autonomous customer support system using LLMs. Must have experience with tool-calling, memory systems, and production deployment. The system should handle 10K+ daily queries with sub-second response times.', skills: ['AI Agents', 'LangChain', 'Python', 'RAG', 'OpenAI'], location: 'San Francisco, CA', remoteType: 'remote', projectType: 'contract', budgetMin: 80000, budgetMax: 120000, postedDate: new Date(Date.now() - 86400000 * 2).toISOString(), source: 'LinkedIn', aiCategory: 'AI Agents', contactEmail: 'sarah@techflow.io' },
+  { title: 'LLM Integration for Enterprise Search', company: 'DataVault Corp', contactName: 'James Wilson', contactTitle: 'CTO', description: 'Enterprise search platform needs LLM integration to provide intelligent document retrieval and summarization. Current system processes 5M+ documents. Need RAG architecture with vector embeddings and real-time indexing.', skills: ['LLMs', 'RAG', 'Vector Databases', 'Elasticsearch', 'Python'], location: 'New York, NY', remoteType: 'hybrid', projectType: 'contract', budgetMin: 150000, budgetMax: 250000, postedDate: new Date(Date.now() - 86400000 * 1).toISOString(), source: 'LinkedIn', aiCategory: 'RAG' },
+  { title: 'NLP Pipeline for Healthcare Analytics', company: 'MedTech Solutions', contactName: 'Dr. Priya Patel', contactTitle: 'Chief Data Officer', description: 'Build NLP pipeline to extract insights from clinical notes and medical records. Must comply with HIPAA. Processing unstructured text from 500K+ patient records to identify treatment patterns and outcomes.', skills: ['NLP', 'Python', 'spaCy', 'BERT', 'Healthcare AI'], location: 'Boston, MA', remoteType: 'remote', projectType: 'contract', budgetMin: 200000, budgetMax: 350000, postedDate: new Date(Date.now() - 86400000 * 3).toISOString(), source: 'LinkedIn', aiCategory: 'NLP' },
+  { title: 'Chatbot Development for E-Commerce', company: 'ShopSmart', contactName: 'Mike Rodriguez', contactTitle: 'Head of Product', description: 'Need a conversational AI chatbot for e-commerce that can handle product recommendations, order tracking, and returns. Must integrate with Shopify and support multi-language.', skills: ['Chatbot Development', 'NLP', 'Python', 'Shopify API', 'Rasa'], location: 'Austin, TX', remoteType: 'remote', projectType: 'freelance', budgetMin: 40000, budgetMax: 60000, postedDate: new Date(Date.now() - 86400000 * 5).toISOString(), source: 'LinkedIn', aiCategory: 'Chatbot Development' },
+  { title: 'ML Model Deployment Pipeline (MLOps)', company: 'Scale AI', contactName: 'Alex Kim', contactTitle: 'ML Engineering Manager', description: 'Build end-to-end MLOps pipeline for training, deploying, and monitoring ML models at scale. Need experience with Kubernetes, MLflow, and real-time model serving. Models process 1M+ predictions/day.', skills: ['MLOps', 'Kubernetes', 'Docker', 'Python', 'MLflow', 'Terraform'], location: 'San Francisco, CA', remoteType: 'hybrid', projectType: 'contract', budgetMin: 120000, budgetMax: 180000, postedDate: new Date(Date.now() - 86400000 * 1).toISOString(), source: 'LinkedIn', aiCategory: 'Machine Learning' },
+  { title: 'AI-Powered Document Processing System', company: 'LegalTech Pro', contactName: 'Emma Thompson', contactTitle: 'CEO', description: 'Develop AI system to automatically parse, classify, and extract key information from legal contracts. Must handle PDFs, scanned documents, and complex table structures with 95%+ accuracy.', skills: ['Computer Vision', 'OCR', 'NLP', 'Python', 'LLMs'], location: 'London, UK', remoteType: 'remote', projectType: 'contract', budgetMin: 90000, budgetMax: 140000, postedDate: new Date(Date.now() - 86400000 * 4).toISOString(), source: 'LinkedIn', aiCategory: 'AI Automation' },
+  { title: 'Recommendation Engine for Streaming Platform', company: 'StreamVibe', contactName: 'David Park', contactTitle: 'VP of Engineering', description: 'Build a real-time recommendation engine using collaborative filtering and content-based approaches. Must handle 50M+ users with sub-100ms latency. Experience with embedding models preferred.', skills: ['Machine Learning', 'Python', 'TensorFlow', 'Redis', 'Spark'], location: 'Los Angeles, CA', remoteType: 'hybrid', projectType: 'contract', budgetMin: 130000, budgetMax: 200000, postedDate: new Date(Date.now() - 86400000 * 6).toISOString(), source: 'LinkedIn', aiCategory: 'Machine Learning' },
+  { title: 'Autonomous Trading Bot with LLM Analysis', company: 'FinEdge Capital', contactName: 'Robert Chang', contactTitle: 'Managing Director', description: 'Need developer to build autonomous trading system that combines quantitative analysis with LLM-powered market sentiment analysis from news and social media. Must include risk management guardrails.', skills: ['AI Agents', 'LLMs', 'Python', 'FinTech', 'Quantitative Analysis'], location: 'Chicago, IL', remoteType: 'remote', projectType: 'consulting', budgetMin: 200000, budgetMax: 350000, postedDate: new Date(Date.now() - 86400000 * 2).toISOString(), source: 'LinkedIn', aiCategory: 'AI Agents' },
+  { title: 'Voice AI Assistant for Call Center', company: 'TelCom Solutions', contactName: 'Lisa Johnson', contactTitle: 'Director of Innovation', description: 'Build voice AI assistant to handle inbound customer calls. Must support real-time speech-to-text, intent recognition, and natural conversation flow. Target: handle 60% of calls without human agent.', skills: ['Voice AI', 'NLP', 'Python', 'Speech Recognition', 'LLMs'], location: 'Dallas, TX', remoteType: 'remote', projectType: 'contract', budgetMin: 100000, budgetMax: 160000, postedDate: new Date(Date.now() - 86400000 * 7).toISOString(), source: 'LinkedIn', aiCategory: 'NLP' },
+  { title: 'RAG System for Internal Knowledge Base', company: 'CloudNine SaaS', contactName: 'Tom Anderson', contactTitle: 'Head of Engineering', description: 'Build RAG system for internal documentation search across Confluence, Slack, and Google Drive. Need semantic search, citation tracking, and permission-aware retrieval. 100K+ internal documents.', skills: ['RAG', 'Vector Databases', 'LangChain', 'Python', 'OpenAI'], location: 'Seattle, WA', remoteType: 'remote', projectType: 'contract', budgetMin: 70000, budgetMax: 110000, postedDate: new Date(Date.now() - 86400000 * 3).toISOString(), source: 'LinkedIn', aiCategory: 'RAG' },
+  { title: 'Computer Vision for Quality Inspection', company: 'ManufactureAI', contactName: 'Hans Mueller', contactTitle: 'CTO', description: 'Develop computer vision system for automated quality inspection on manufacturing line. Must detect defects with 99.5% accuracy at production speed. Edge deployment required.', skills: ['Computer Vision', 'PyTorch', 'Python', 'Edge AI', 'OpenCV'], location: 'Detroit, MI', remoteType: 'onsite', projectType: 'contract', budgetMin: 85000, budgetMax: 130000, postedDate: new Date(Date.now() - 86400000 * 8).toISOString(), source: 'LinkedIn', aiCategory: 'Machine Learning' },
+  { title: 'AI Content Generation Platform', company: 'ContentScale', contactName: 'Nina Williams', contactTitle: 'Product Lead', description: 'Build AI-powered content generation platform that creates blog posts, social media content, and marketing copy. Must support brand voice customization, SEO optimization, and multi-format output.', skills: ['LLMs', 'Python', 'Prompt Engineering', 'FastAPI', 'React'], location: 'Remote', remoteType: 'remote', projectType: 'freelance', budgetMin: 50000, budgetMax: 80000, postedDate: new Date(Date.now() - 86400000 * 1).toISOString(), source: 'LinkedIn', aiCategory: 'LLMs' },
+  { title: 'Fraud Detection ML System', company: 'SecurePay', contactName: 'Ahmed Hassan', contactTitle: 'Chief Security Officer', description: 'Build real-time fraud detection system using ensemble ML models. Must process 50K transactions/second with less than 10ms latency. Need explainability features for compliance team.', skills: ['Machine Learning', 'Python', 'XGBoost', 'Kafka', 'Real-time ML'], location: 'Miami, FL', remoteType: 'hybrid', projectType: 'contract', budgetMin: 150000, budgetMax: 220000, postedDate: new Date(Date.now() - 86400000 * 5).toISOString(), source: 'LinkedIn', aiCategory: 'Machine Learning' },
+  { title: 'Multi-Agent AI System for Supply Chain', company: 'LogiChain', contactName: 'Rachel Green', contactTitle: 'VP of Operations', description: 'Design multi-agent AI system for supply chain optimization. Agents must handle procurement, inventory management, and logistics routing autonomously. Must integrate with SAP and Oracle.', skills: ['AI Agents', 'Multi-Agent Systems', 'Python', 'Operations Research', 'SAP'], location: 'Atlanta, GA', remoteType: 'hybrid', projectType: 'contract', budgetMin: 180000, budgetMax: 280000, postedDate: new Date(Date.now() - 86400000 * 4).toISOString(), source: 'LinkedIn', aiCategory: 'AI Agents' },
+  { title: 'AI Tutoring Platform for Education', company: 'EduAI', contactName: 'Chris Martinez', contactTitle: 'Founder & CEO', description: 'Build adaptive AI tutoring platform that personalizes learning paths for K-12 students. Must include progress tracking, parent dashboard, and curriculum alignment. ASAP timeline.', skills: ['LLMs', 'Python', 'React', 'Education AI', 'Adaptive Learning'], location: 'Denver, CO', remoteType: 'remote', projectType: 'freelance', budgetMin: 60000, budgetMax: 95000, postedDate: new Date(Date.now() - 86400000 * 1).toISOString(), source: 'LinkedIn', aiCategory: 'AI Automation' },
+];
+
 export default function LeadDiscovery() {
   const navigate = useNavigate();
-  const { leads, projects, addToast, toggleSaveLead, addLeadToProject } = useApp();
+  const { leads, projects, addToast, toggleSaveLead, addLeadToProject, createLead } = useApp();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
+  const [serverResults, setServerResults] = useState<Lead[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [sortBy, setSortBy] = useState('score');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -24,14 +46,16 @@ export default function LeadDiscovery() {
   const [budgetMin, setBudgetMin] = useState('');
   const [budgetMax, setBudgetMax] = useState('');
   const [minScore, setMinScore] = useState('');
-  const [searched, setSearched] = useState(false);
   const [projectDropdownLeadId, setProjectDropdownLeadId] = useState<string | null>(null);
+  const [discovering, setDiscovering] = useState(false);
+
+  const displayLeads = serverResults !== null ? serverResults : leads;
 
   const filteredLeads = useMemo(() => {
-    let result = [...leads];
-    if (searchQuery) {
+    let result = [...displayLeads];
+    if (serverResults === null && searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(l => l.title.toLowerCase().includes(q) || l.company.toLowerCase().includes(q) || l.description.toLowerCase().includes(q) || l.skills.some(s => s.toLowerCase().includes(q)));
+      result = result.filter(l => l.title.toLowerCase().includes(q) || l.company.toLowerCase().includes(q) || l.description.toLowerCase().includes(q) || l.skills.some(s => s.toLowerCase().includes(q)) || l.aiCategory.toLowerCase().includes(q) || l.contactName.toLowerCase().includes(q));
     }
     if (selectedCategory !== 'All') result = result.filter(l => l.aiCategory === selectedCategory);
     if (selectedWorkType !== 'Any') result = result.filter(l => l.remoteType === selectedWorkType.toLowerCase());
@@ -44,10 +68,40 @@ export default function LeadDiscovery() {
     else if (sortBy === 'budget') result.sort((a, b) => (b.budgetMax || 0) - (a.budgetMax || 0));
     else if (sortBy === 'date') result.sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime());
     return result;
-  }, [leads, searchQuery, selectedCategory, selectedWorkType, selectedIndustry, locationFilter, budgetMin, budgetMax, minScore, sortBy]);
+  }, [displayLeads, searchQuery, serverResults, selectedCategory, selectedWorkType, selectedIndustry, locationFilter, budgetMin, budgetMax, minScore, sortBy]);
 
-  const handleSearch = () => { setSearched(true); setShowSuggestions(false); };
-  const clearFilters = () => { setSearchQuery(''); setSelectedCategory('All'); setSelectedWorkType('Any'); setSelectedIndustry('All'); setLocationFilter(''); setBudgetMin(''); setBudgetMax(''); setMinScore(''); setSearched(false); };
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || !user) return;
+    setSearching(true);
+    try {
+      const results = await searchLeads(user.id, searchQuery);
+      setServerResults(results as Lead[]);
+    } catch { addToast('error', 'Search failed'); }
+    setSearching(false);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setServerResults(null);
+  };
+
+  const handleDiscoverLeads = async () => {
+    if (!user) return;
+    setDiscovering(true);
+    try {
+      const shuffled = [...sampleLeads].sort(() => 0.5 - Math.random());
+      const batch = shuffled.slice(0, Math.min(10, shuffled.length));
+      for (const lead of batch) { await createLead(lead); }
+      addToast('success', `Discovered ${batch.length} new AI leads!`);
+    } catch { addToast('error', 'Failed to discover leads'); }
+    setDiscovering(false);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery(''); setServerResults(null);
+    setSelectedCategory('All'); setSelectedWorkType('Any'); setSelectedIndustry('All');
+    setLocationFilter(''); setBudgetMin(''); setBudgetMax(''); setMinScore('');
+  };
 
   return (
     <div className="space-y-5">
@@ -57,35 +111,42 @@ export default function LeadDiscovery() {
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-            <input
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
-              onFocus={() => setShowSuggestions(true)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Search AI projects, skills, or opportunities..."
-              className="input-field w-full pl-10 pr-4 py-3"
-            />
-          </div>
-          <button onClick={handleSearch} className="btn-primary px-6 shrink-0">Search</button>
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <input
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); if (serverResults) setServerResults(null); }}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            placeholder="Search AI projects, skills, companies, or contacts..."
+            className="input-field w-full pl-10 pr-4 py-3"
+          />
+          {searchQuery && (
+            <button onClick={handleClearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
-        {showSuggestions && !searchQuery && (
-          <div className="absolute top-full mt-1 left-0 right-0 bg-[#111827] border border-gray-700 rounded-lg shadow-xl z-20 p-2">
-            <p className="text-xs text-gray-500 px-2 py-1">Popular searches</p>
-            {suggestions.map((s) => (
-              <button key={s} onMouseDown={() => { setSearchQuery(s); setShowSuggestions(false); handleSearch(); }} className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 rounded-lg">{s}</button>
-            ))}
-          </div>
-        )}
+        <button onClick={handleSearch} disabled={searching || !searchQuery.trim()} className="btn-primary px-6 shrink-0 flex items-center gap-2 disabled:opacity-40">
+          {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+          Search
+        </button>
       </div>
 
-      {/* Filters Toggle */}
-      <button onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-        <Filter className="w-4 h-4" /> {showFilters ? 'Hide' : 'Show'} Filters
-      </button>
+      {/* Quick Actions */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+          <Filter className="w-4 h-4" /> {showFilters ? 'Hide' : 'Show'} Filters
+        </button>
+        <div className="h-4 w-px bg-gray-700" />
+        <button onClick={handleDiscoverLeads} disabled={discovering} className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20 transition-colors disabled:opacity-50">
+          {discovering ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          {discovering ? 'Discovering...' : 'Discover AI Leads'}
+        </button>
+        <button onClick={() => navigate('/app/integrations')} className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-colors">
+          Import CSV
+        </button>
+      </div>
 
       {/* Filters */}
       {showFilters && (
@@ -134,7 +195,7 @@ export default function LeadDiscovery() {
 
       {/* Results Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <p className="text-sm text-gray-400">{searched ? `${filteredLeads.length} results found` : `${filteredLeads.length} available leads`}</p>
+        <p className="text-sm text-gray-400">{filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''} {serverResults ? 'found' : 'available'}</p>
         <div className="flex items-center gap-2">
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="input-field text-sm w-auto py-1.5">
             <option value="score">Sort by Score</option>
@@ -163,7 +224,7 @@ export default function LeadDiscovery() {
                 </div>
                 <span className={`badge text-xs shrink-0 ${(lead.scoreOverall || lead.leadScore || 0) >= 80 ? 'bg-emerald-500/10 text-emerald-400' : (lead.scoreOverall || lead.leadScore || 0) >= 60 ? 'bg-blue-500/10 text-blue-400' : 'bg-amber-500/10 text-amber-400'}`}>{lead.scoreOverall || lead.leadScore || 0}</span>
               </div>
-              <p className="text-xs text-gray-400 mb-3 line-clamp-2">{lead.excerpt}</p>
+              <p className="text-xs text-gray-400 mb-3 line-clamp-2">{lead.description}</p>
               <div className="flex flex-wrap gap-1 mb-3">
                 {lead.skills.slice(0, 3).map((s) => <span key={s} className="px-2 py-0.5 rounded bg-gray-800 text-gray-300 text-xs">{s}</span>)}
                 {lead.skills.length > 3 && <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-500 text-xs">+{lead.skills.length - 3}</span>}
@@ -299,10 +360,22 @@ export default function LeadDiscovery() {
       {/* Empty State */}
       {filteredLeads.length === 0 && (
         <div className="card text-center py-12">
-          <Search className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-white mb-1">No leads found</h3>
-          <p className="text-sm text-gray-400 mb-4">Try adjusting your search or filters</p>
-          <button onClick={clearFilters} className="btn-primary">Clear All Filters</button>
+          <Sparkles className="w-12 h-12 text-purple-500/50 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-white mb-1">{leads.length === 0 ? 'No leads yet' : 'No leads match your search'}</h3>
+          <p className="text-sm text-gray-400 mb-6 max-w-md mx-auto">
+            {leads.length === 0
+              ? 'Discover AI engineering leads instantly or import your own from LinkedIn CSV.'
+              : 'Try adjusting your search or filters.'}
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            {leads.length === 0 && (
+              <button onClick={handleDiscoverLeads} disabled={discovering} className="btn-primary flex items-center gap-2">
+                {discovering ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {discovering ? 'Discovering...' : 'Discover AI Leads'}
+              </button>
+            )}
+            <button onClick={clearFilters} className="btn-secondary">Clear Filters</button>
+          </div>
         </div>
       )}
     </div>
