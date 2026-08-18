@@ -179,8 +179,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [addToast]);
 
   const reassignLead = useCallback((leadId: string, owner: TeamMember) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (lead) {
+      const activity = { id: generateId(), type: 'reassigned', description: `Lead reassigned to ${owner.name}`, timestamp: new Date().toISOString() };
+      const newActivities = [...lead.activities, activity];
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, activities: newActivities } : l));
+      api.updateLead(leadId, { activities: newActivities }).catch(() => addToast('error', 'Failed to reassign lead'));
+    }
     addToast('success', `Lead reassigned to ${owner.name}`);
-  }, [addToast]);
+  }, [leads, addToast]);
 
   const addProject = useCallback(async (project: Omit<Project, 'id'>) => {
     if (!user) return;

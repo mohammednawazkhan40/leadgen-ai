@@ -1,21 +1,28 @@
 import { useState } from 'react';
 import { Search, Bell, RefreshCw, Menu, ChevronDown } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { currentUser } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
 
 export default function TopBar() {
-  const { setSidebarOpen, addToast } = useApp();
+  const { setSidebarOpen, addToast, refreshLeads, refreshStats } = useApp();
+  const { user, profile } = useAuth();
   const [searchFocused, setSearchFocused] = useState(false);
 
-  const syncToast = () => {
+  const syncToast = async () => {
     addToast('info', 'Syncing leads from LinkedIn...');
-    setTimeout(() => addToast('success', 'Leads synced successfully! 24 new leads found.'), 2000);
+    await refreshLeads();
+    await refreshStats();
+    addToast('success', 'Leads synced successfully!');
   };
 
-  const initials = currentUser.name
+  const displayName = profile?.full_name || user?.email || 'User';
+  const displayCompany = profile?.company || 'LeadGen AI';
+
+  const initials = displayName
     .split(' ')
-    .map((n) => n[0])
-    .join('');
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase();
 
   return (
     <header className="h-16 bg-[#0a1628] border-b border-white/5 flex items-center justify-between px-4 lg:px-6 shrink-0">
@@ -52,7 +59,10 @@ export default function TopBar() {
           <span>Sync Leads</span>
         </button>
 
-        <button className="sm:hidden text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-colors">
+        <button
+          onClick={syncToast}
+          className="sm:hidden text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-colors"
+        >
           <RefreshCw className="w-5 h-5" />
         </button>
 
@@ -66,8 +76,8 @@ export default function TopBar() {
             {initials}
           </div>
           <div className="hidden md:block text-left">
-            <p className="text-sm font-medium text-white leading-none">{currentUser.name}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{currentUser.company}</p>
+            <p className="text-sm font-medium text-white leading-none">{displayName}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{displayCompany}</p>
           </div>
           <ChevronDown className="w-4 h-4 text-gray-500 hidden md:block" />
         </div>

@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { getGreeting, formatRelativeTime } from '../utils/ai';
 import { formatCurrency, getScoreColor, getStatusColor, getStatusLabel } from '../utils/helpers';
-import { weeklyLeadData, categoryData } from '../data/mockData';
 import { TrendingUp, Target, DollarSign, Reply, Eye, Bookmark, BookmarkCheck, ExternalLink, RefreshCw, CheckCircle, AlertCircle, Clock, Loader2 } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { fetchSettings } from '../services/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -14,13 +14,85 @@ export default function Dashboard() {
   const { user, profile } = useAuth();
   const [syncing, setSyncing] = useState(false);
   const [lastSyncTime] = useState(new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString());
+  const [integrations, setIntegrations] = useState<{ type: string; status: string; name: string }[]>([]);
 
-  const kpis = [
-    { label: 'New Leads This Week', value: String(stats.newLeads), change: '+18%', icon: <TrendingUp className="w-5 h-5" />, color: 'bg-emerald-500/10 text-emerald-400', to: '/app/leads' },
-    { label: 'Qualified Opportunities', value: String(stats.qualifiedLeads), change: '+8%', icon: <Target className="w-5 h-5" />, color: 'bg-blue-500/10 text-blue-400', to: '/app/saved' },
-    { label: 'Pipeline Value', value: formatCurrency(stats.pipelineValue), change: '+24%', icon: <DollarSign className="w-5 h-5" />, color: 'bg-amber-500/10 text-amber-400', to: '/app/analytics' },
-    { label: 'Reply Rate', value: `${stats.replyRate}%`, change: '+3.2%', icon: <Reply className="w-5 h-5" />, color: 'bg-purple-500/10 text-purple-400', to: '/app/outreach' },
-  ];
+  useEffect(() => {
+    if (user) {
+      fetchSettings(user.id).then(s => {
+        if (s?.integrations) setIntegrations(s.integrations);
+      }).catch(() => {});
+    }
+  }, [user]);
+
+  const weeklyLeadData = useMemo(() => {
+    const now = new Date();
+    const weeks: { week: string; leads: number; qualified: number }[] = [];
+    const qualifiedStatuses = new Set(['qualified', 'contacted', 'discovery_call', 'proposal_sent', 'won']);
+
+    for (let i = 7; i >= 0; i--) {
+      const weekEnd = new Date(now);
+      weekEnd.setDate(now.getDate() - i * 7);
+      weekEnd.setHours(23, 59, 59, 999);
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekEnd.getDate() - 6);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const leadsInWeek = leads.filter(l => {
+        const d = new Date(l.postedDate);
+        return d >= weekStart && d <= weekEnd;
+      });
+
+      weeks.push({
+        week: label,
+        leads: leadsInWeek.length,
+        qualified: leadsInWeek.filter(l => qualifiedStatuses.has(l.status)).length,
+      });
+    }
+    return weeks;
+  }, [leads]);
+
+  const categoryData = useMemo(() => {
+    const map: Record<string, number> = {};
+    leads.forEach(l => {
+      const cat = l.aiCategory || 'Uncategorized';
+      map[cat] = (map[cat] || 0) + 1;
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [leads]);
+
+  const kpis = useMemo(() => {
+    const currWeek = weeklyLeadData[weeklyLeadData.length - 1];
+    const prevWeek = weeklyLeadData.length > 1 ? weeklyLeadData[weeklyLeadData.length - 2] : null;
+
+    const leadChange = currWeek && prevWeek && prevWeek.leads > 0
+      ? Math.round(((currWeek.leads - prevWeek.leads) / prevWeek.leads) * 100)
+      : 0;
+    const qualChange = currWeek && prevWeek && prevWeek.qualified > 0
+      ? Math.round(((currWeek.qualified - prevWeek.qualified) / prevWeek.qualified) * 100)
+      : 0;
+
+    const fmt = (pct: number) => pct >= 0 ? `+${pct}%` : `${pct}%`;
+
+    return [
+      { label: 'New Leads This Week', value: String(stats.newLeads), change: fmt(leadChange), icon: <TrendingUp className="w-5 h-5" />, color: 'bg-emerald-500/10 text-emerald-400', to: '/app/leads' },
+      { label: 'Qualified Opportunities', value: String(stats.qualifiedLeads), change: fmt(qualChange), icon: <Target className="w-5 h-5" />, color: 'bg-blue-500/10 text-blue-400', to: '/app/saved' },
+      { label: 'Pipeline Value', value: formatCurrency(stats.pipelineValue), change: '', icon: <DollarSign className="w-5 h-5" />, color: 'bg-amber-500/10 text-amber-400', to: '/app/analytics' },
+      { label: 'Reply Rate', value: `${stats.replyRate}%`, change: '', icon: <Reply className="w-5 h-5" />, color: 'bg-purple-500/10 text-purple-400', to: '/app/outreach' },
+    ];
+  }, [weeklyLeadData, stats]);
+
+  const integrationDisplay = useMemo(() => {
+    const byType = new Map(integrations.map(i => [i.type, i]));
+    return [
+      { type: 'linkedin', label: 'LinkedIn API' },
+      { type: 'csv', label: 'CSV Import' },
+      { type: 'email', label: 'Email Integration' },
+    ].map(item => {
+      const int = byType.get(item.type);
+      return { type: item.type, label: item.label, status: int?.status || 'disconnected' };
+    });
+  }, [integrations]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -76,9 +148,11 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-gray-400">{kpi.label}</p>
                 <p className="text-3xl font-bold text-white mt-1">{kpi.value}</p>
-                <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" /> {kpi.change} from last week
-                </p>
+                {kpi.change && (
+                  <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" /> {kpi.change} from last week
+                  </p>
+                )}
               </div>
               <div className={`p-2.5 rounded-lg ${kpi.color} group-hover:scale-110 transition-transform`}>
                 {kpi.icon}
@@ -222,9 +296,15 @@ export default function Dashboard() {
         <div className="card">
           <h3 className="font-semibold text-white mb-3">API Connection Health</h3>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between items-center"><span className="text-gray-400">LinkedIn API</span><span className="flex items-center gap-1.5 text-emerald-400"><CheckCircle className="w-4 h-4" /> Connected</span></div>
-            <div className="flex justify-between items-center"><span className="text-gray-400">CSV Import</span><span className="flex items-center gap-1.5 text-emerald-400"><CheckCircle className="w-4 h-4" /> Connected</span></div>
-            <div className="flex justify-between items-center"><span className="text-gray-400">Email Integration</span><span className="flex items-center gap-1.5 text-red-400"><AlertCircle className="w-4 h-4" /> Error</span></div>
+            {integrationDisplay.map(item => (
+              <div key={item.type} className="flex justify-between items-center">
+                <span className="text-gray-400">{item.label}</span>
+                <span className={`flex items-center gap-1.5 ${item.status === 'connected' ? 'text-emerald-400' : item.status === 'error' ? 'text-red-400' : 'text-gray-400'}`}>
+                  {item.status === 'connected' ? <CheckCircle className="w-4 h-4" /> : item.status === 'error' ? <AlertCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                  {item.status === 'connected' ? 'Connected' : item.status === 'error' ? 'Error' : 'Disconnected'}
+                </span>
+              </div>
+            ))}
             <div className="flex justify-between items-center"><span className="text-gray-400">Last checked</span><span className="text-white flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {formatRelativeTime(lastSyncTime)}</span></div>
           </div>
           <Link to="/app/integrations" className="btn-secondary w-full mt-4 block text-center">Manage Integrations →</Link>

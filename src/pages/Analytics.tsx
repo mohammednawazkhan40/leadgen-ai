@@ -1,13 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import {
-  weeklyLeadData,
-  categoryData,
-  conversionData,
-  teamPerformance,
-  keywordPerformance,
-  pipelineByCategory,
-} from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/helpers';
 import {
   BarChart3,
@@ -37,31 +30,8 @@ import {
 
 const dateRanges = ['This Week', 'This Month', 'Last Quarter', 'This Year', 'Custom'] as const;
 
-const kpiCards = [
-  { title: 'Total Leads', value: '156', trend: '+22%', icon: Users, iconBg: 'bg-accent-500/10', iconColor: 'text-accent-400' },
-  { title: 'Conversion Rate', value: '12.8%', trend: '+2.1%', icon: Target, iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400' },
-  { title: 'Pipeline Value', value: '$1.85M', trend: '+24%', icon: DollarSign, iconBg: 'bg-amber-500/10', iconColor: 'text-amber-400' },
-  { title: 'Avg Deal Size', value: '$115K', trend: '+8%', icon: TrendingUp, iconBg: 'bg-purple-500/10', iconColor: 'text-purple-400' },
-];
-
 const funnelColors = ['#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#10b981', '#059669'];
-
 const pieColors = ['#3b82f6', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
-
-const leadSources = [
-  { source: 'LinkedIn', value: 78 },
-  { source: 'CSV Import', value: 12 },
-  { source: 'Manual', value: 7 },
-  { source: 'Referral', value: 3 },
-];
-
-const extendedWeeklyData = [
-  { week: 'Jun 23', leads: 8, qualified: 2 },
-  { week: 'Jun 30', leads: 10, qualified: 3 },
-  { week: 'Jul 7', leads: 14, qualified: 5 },
-  { week: 'Jul 14', leads: 11, qualified: 3 },
-  ...weeklyLeadData,
-];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -81,7 +51,134 @@ export default function Analytics() {
   const [selectedRange, setSelectedRange] = useState<string>('This Month');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const { addToast } = useApp();
+  const { leads, projects, stats, addToast } = useApp();
+  const { user, profile } = useAuth();
+
+  const weeklyLeadData = useMemo(() => {
+    const now = new Date();
+    const weeks: { week: string; leads: number; qualified: number }[] = [];
+    const qualifiedStatuses = new Set(['qualified', 'contacted', 'discovery_call', 'proposal_sent', 'won']);
+
+    for (let i = 7; i >= 0; i--) {
+      const weekEnd = new Date(now);
+      weekEnd.setDate(now.getDate() - i * 7);
+      weekEnd.setHours(23, 59, 59, 999);
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekEnd.getDate() - 6);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const leadsInWeek = leads.filter(l => {
+        const d = new Date(l.postedDate);
+        return d >= weekStart && d <= weekEnd;
+      });
+
+      weeks.push({
+        week: label,
+        leads: leadsInWeek.length,
+        qualified: leadsInWeek.filter(l => qualifiedStatuses.has(l.status)).length,
+      });
+    }
+    return weeks;
+  }, [leads]);
+
+  const categoryData = useMemo(() => {
+    const map: Record<string, number> = {};
+    leads.forEach(l => {
+      const cat = l.aiCategory || 'Uncategorized';
+      map[cat] = (map[cat] || 0) + 1;
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value }));
+  }, [leads]);
+
+  const conversionData = useMemo(() => {
+    const statusOrder = ['new', 'reviewing', 'qualified', 'contacted', 'discovery_call', 'proposal_sent', 'won'];
+    const statusLabels: Record<string, string> = {
+      new: 'New', reviewing: 'Reviewing', qualified: 'Qualified',
+      contacted: 'Contacted', discovery_call: 'Discovery Call',
+      proposal_sent: 'Proposal Sent', won: 'Won',
+    };
+    return statusOrder
+      .map(s => ({ stage: statusLabels[s], count: leads.filter(l => l.status === s).length }))
+      .filter(d => d.count > 0);
+  }, [leads]);
+
+  const pipelineByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    leads.forEach(l => {
+      const cat = l.aiCategory || 'Uncategorized';
+      const avg = ((l.budgetMin || 0) + (l.budgetMax || 0)) / 2;
+      map[cat] = (map[cat] || 0) + avg;
+    });
+    return Object.entries(map)
+      .map(([category, value]) => ({ category, value: Math.round(value) }))
+      .filter(d => d.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [leads]);
+
+  const teamPerformance = useMemo(() => {
+    const qualifiedStatuses = ['qualified', 'contacted', 'discovery_call', 'proposal_sent', 'won'];
+    const qualifiedCount = leads.filter(l => qualifiedStatuses.includes(l.status)).length;
+    const wonCount = leads.filter(l => l.status === 'won').length;
+    const pipeline = leads.reduce((s, l) => s + ((l.budgetMin || 0) + (l.budgetMax || 0)) / 2, 0);
+    return [{
+      name: profile?.full_name || 'You',
+      leads: leads.length,
+      qualified: qualifiedCount,
+      won: wonCount,
+      pipeline: Math.round(pipeline),
+    }];
+  }, [leads, user]);
+
+  const keywordPerformance = useMemo(() => {
+    const skillCounts: Record<string, { leads: number; qualified: number }> = {};
+    const qualifiedStatuses = ['qualified', 'contacted', 'discovery_call', 'proposal_sent', 'won'];
+    leads.forEach(l => {
+      (l.skills || []).forEach(skill => {
+        if (!skillCounts[skill]) skillCounts[skill] = { leads: 0, qualified: 0 };
+        skillCounts[skill].leads++;
+        if (qualifiedStatuses.includes(l.status)) {
+          skillCounts[skill].qualified++;
+        }
+      });
+    });
+    return Object.entries(skillCounts)
+      .map(([keyword, data]) => ({
+        keyword,
+        leads: data.leads,
+        conversion: data.leads > 0 ? Math.round((data.qualified / data.leads) * 100) : 0,
+      }))
+      .sort((a, b) => b.conversion - a.conversion)
+      .slice(0, 10);
+  }, [leads]);
+
+  const leadSources = useMemo(() => {
+    const map: Record<string, number> = {};
+    const total = leads.length || 1;
+    leads.forEach(l => {
+      const src = l.source || 'Unknown';
+      map[src] = (map[src] || 0) + 1;
+    });
+    return Object.entries(map)
+      .map(([source, count]) => ({ source, value: Math.round((count / total) * 100) }))
+      .sort((a, b) => b.value - a.value);
+  }, [leads]);
+
+  const kpiCards = useMemo(() => {
+    const wonCount = leads.filter(l => l.status === 'won').length;
+    const conversionRate = leads.length > 0 ? ((wonCount / leads.length) * 100).toFixed(1) : '0';
+    const budgets = leads.filter(l => l.budgetMin || l.budgetMax);
+    const avgDeal = budgets.length > 0
+      ? formatCurrency(Math.round(budgets.reduce((s, l) => s + ((l.budgetMin || 0) + (l.budgetMax || 0)) / 2, 0) / budgets.length))
+      : '$0';
+
+    return [
+      { title: 'Total Leads', value: String(stats.totalLeads), icon: Users, iconBg: 'bg-accent-500/10', iconColor: 'text-accent-400' },
+      { title: 'Conversion Rate', value: `${conversionRate}%`, icon: Target, iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400' },
+      { title: 'Pipeline Value', value: formatCurrency(stats.pipelineValue), icon: DollarSign, iconBg: 'bg-amber-500/10', iconColor: 'text-amber-400' },
+      { title: 'Avg Deal Size', value: avgDeal, icon: TrendingUp, iconBg: 'bg-purple-500/10', iconColor: 'text-purple-400' },
+    ];
+  }, [leads, stats]);
 
   const handleExport = (format: string) => {
     setExportOpen(false);
@@ -162,10 +259,6 @@ export default function Analytics() {
                   <Icon className={`w-5 h-5 ${card.iconColor}`} />
                 </div>
               </div>
-              <p className="text-emerald-400 text-xs mt-3 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                {card.trend} from last period
-              </p>
             </div>
           );
         })}
@@ -174,7 +267,7 @@ export default function Analytics() {
       <div className="card">
         <h2 className="text-lg font-semibold text-white mb-4">Lead Acquisition Trend</h2>
         <ResponsiveContainer width="100%" height={350}>
-          <AreaChart data={extendedWeeklyData}>
+          <AreaChart data={weeklyLeadData}>
             <defs>
               <linearGradient id="leadsGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -205,7 +298,7 @@ export default function Analytics() {
               <XAxis type="number" stroke="#6783c1" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis type="category" dataKey="stage" stroke="#6783c1" fontSize={12} tickLine={false} axisLine={false} width={110} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="count" name="Count" radius={[0, 4, 4, 0]} label={{ position: 'right', fill: '#6783c1', fontSize: 12, formatter: (v: number) => `${v} (${((v / 156) * 100).toFixed(1)}%)` }}>
+              <Bar dataKey="count" name="Count" radius={[0, 4, 4, 0]} label={{ position: 'right', fill: '#6783c1', fontSize: 12, formatter: (v: number) => `${v} (${leads.length > 0 ? ((v / leads.length) * 100).toFixed(1) : 0}%)` }}>
                 {conversionData.map((_, index) => (
                   <Cell key={index} fill={funnelColors[index % funnelColors.length]} />
                 ))}
@@ -271,7 +364,7 @@ export default function Analytics() {
         <div className="card">
           <h2 className="text-lg font-semibold text-white mb-4">Most Effective Keywords</h2>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={[...keywordPerformance].sort((a, b) => b.conversion - a.conversion)} layout="vertical" margin={{ left: 30 }}>
+            <BarChart data={keywordPerformance} layout="vertical" margin={{ left: 30 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#142248" horizontal={false} />
               <XAxis type="number" stroke="#6783c1" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis type="category" dataKey="keyword" stroke="#6783c1" fontSize={11} tickLine={false} axisLine={false} width={130} />
@@ -302,7 +395,7 @@ export default function Analytics() {
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-navy-700 flex items-center justify-center text-navy-300 text-xs font-medium">
-                        {member.name.split(' ').map(n => n[0]).join('')}
+                        {member.name.split(' ').map((n: string) => n[0]).join('')}
                       </div>
                       <span className="text-white font-medium">{member.name}</span>
                     </div>
@@ -315,7 +408,7 @@ export default function Analytics() {
                   <td className="py-3 pr-4 text-navy-200">{formatCurrency(member.pipeline)}</td>
                   <td className="py-3 pr-4">
                     <span className="text-accent-400 font-medium">
-                      {((member.won / member.leads) * 100).toFixed(1)}%
+                      {member.leads > 0 ? ((member.won / member.leads) * 100).toFixed(1) : '0'}%
                     </span>
                   </td>
                 </tr>

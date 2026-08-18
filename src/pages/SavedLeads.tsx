@@ -48,7 +48,7 @@ const statusOptions = [
 ];
 
 export default function SavedLeads() {
-  const { leads, addToast } = useApp();
+  const { leads, projects, addToast, addLeadToProject } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('score_desc');
@@ -56,6 +56,8 @@ export default function SavedLeads() {
   const [statusFilter, setStatusFilter] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [removedLeads, setRemovedLeads] = useState<Set<string>>(new Set());
+  const [projectDropdownLeadId, setProjectDropdownLeadId] = useState<string | null>(null);
+  const [bulkProjectDropdown, setBulkProjectDropdown] = useState(false);
 
   const savedLeads = useMemo(() => {
     return leads.filter(
@@ -165,9 +167,11 @@ export default function SavedLeads() {
     setSelected(new Set());
   };
 
-  const handleBulkAddToProject = () => {
+  const handleBulkAddToProject = (projectId: string) => {
+    selected.forEach(leadId => addLeadToProject(leadId, projectId));
     addToast('success', `${selected.size} lead(s) added to project`);
     setSelected(new Set());
+    setBulkProjectDropdown(false);
   };
 
   const stats = [
@@ -268,10 +272,25 @@ export default function SavedLeads() {
             <span className="text-white font-medium">{selected.size}</span> lead(s) selected
           </span>
           <div className="flex items-center gap-2 ml-auto">
-            <button onClick={handleBulkAddToProject} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-600/20 text-accent-400 border border-accent-500/30 hover:bg-accent-600/30 transition-colors">
-              <FolderPlus className="w-3.5 h-3.5" />
-              Add to Project
-            </button>
+            <div className="relative">
+              <button onClick={() => setBulkProjectDropdown(!bulkProjectDropdown)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-600/20 text-accent-400 border border-accent-500/30 hover:bg-accent-600/30 transition-colors">
+                <FolderPlus className="w-3.5 h-3.5" />
+                Add to Project
+              </button>
+              {bulkProjectDropdown && (
+                <div className="absolute top-full mt-1 left-0 bg-navy-800 border border-navy-700 rounded-lg shadow-xl z-30 py-1 min-w-[200px]">
+                  {projects.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-navy-400">No projects available</p>
+                  ) : (
+                    projects.map(p => (
+                      <button key={p.id} onClick={() => handleBulkAddToProject(p.id)} className="w-full text-left px-3 py-2 text-xs text-navy-200 hover:bg-navy-700 hover:text-white transition-colors">
+                        {p.name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             <button onClick={handleBulkExport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-navy-700 text-navy-200 border border-navy-600 hover:text-white transition-colors">
               <Download className="w-3.5 h-3.5" />
               Export
@@ -388,13 +407,28 @@ export default function SavedLeads() {
                         >
                           <Bookmark className="w-4 h-4 fill-current" />
                         </button>
-                        <button
-                          onClick={() => addToast('info', 'Added to project. Visit Projects to manage.')}
-                          className="p-1.5 rounded-lg text-navy-400 hover:text-white hover:bg-navy-700 transition-colors"
-                          title="Add to project"
-                        >
-                          <FolderPlus className="w-4 h-4" />
-                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setProjectDropdownLeadId(projectDropdownLeadId === lead.id ? null : lead.id)}
+                            className="p-1.5 rounded-lg text-navy-400 hover:text-white hover:bg-navy-700 transition-colors"
+                            title="Add to project"
+                          >
+                            <FolderPlus className="w-4 h-4" />
+                          </button>
+                          {projectDropdownLeadId === lead.id && (
+                            <div className="absolute top-full right-0 mt-1 bg-navy-800 border border-navy-700 rounded-lg shadow-xl z-30 py-1 min-w-[180px]">
+                              {projects.length === 0 ? (
+                                <p className="px-3 py-2 text-xs text-navy-400">No projects</p>
+                              ) : (
+                                projects.map(p => (
+                                  <button key={p.id} onClick={() => { addLeadToProject(lead.id, p.id); setProjectDropdownLeadId(null); addToast('success', `Added to ${p.name}`); }} className="w-full text-left px-3 py-2 text-xs text-navy-200 hover:bg-navy-700 hover:text-white transition-colors">
+                                    {p.name}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, Globe, Target, Check } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
 
 const steps = [
   { id: 1, label: "Company Info", icon: Building2 },
@@ -44,6 +46,7 @@ const clientTypes = ["Startup", "SMB", "Enterprise"];
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
 
   const [companyName, setCompanyName] = useState("");
@@ -67,7 +70,29 @@ export default function Onboarding() {
   const next = () => setCurrentStep((s) => Math.min(s + 1, 3));
   const back = () => setCurrentStep((s) => Math.max(s - 1, 1));
 
-  const complete = () => {
+  const complete = async () => {
+    if (user) {
+      const onboardingData = {
+        companyName,
+        website,
+        industry,
+        selectedServices,
+        geography,
+        clientType,
+        keywords,
+        completedAt: new Date().toISOString(),
+      };
+
+      await supabase.from('user_settings').upsert(
+        { user_id: user.id, integrations: { onboarding: onboardingData } },
+        { onConflict: 'user_id' }
+      );
+
+      if (companyName) {
+        await supabase.from('profiles').update({ company: companyName }).eq('id', user.id);
+      }
+    }
+
     navigate("/app/dashboard");
   };
 

@@ -11,7 +11,7 @@ const workTypes = ['Any', 'Remote', 'Hybrid', 'Onsite'];
 
 export default function LeadDiscovery() {
   const navigate = useNavigate();
-  const { leads, addToast, toggleSaveLead } = useApp();
+  const { leads, projects, addToast, toggleSaveLead, addLeadToProject } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
@@ -25,6 +25,7 @@ export default function LeadDiscovery() {
   const [budgetMax, setBudgetMax] = useState('');
   const [minScore, setMinScore] = useState('');
   const [searched, setSearched] = useState(false);
+  const [projectDropdownLeadId, setProjectDropdownLeadId] = useState<string | null>(null);
 
   const filteredLeads = useMemo(() => {
     let result = [...leads];
@@ -183,7 +184,22 @@ export default function LeadDiscovery() {
                   {lead.saved ? <><Bookmark className="w-3.5 h-3.5 text-blue-400" /> Saved</> : <><Bookmark className="w-3.5 h-3.5" /> Save</>}
                 </button>
                 <button onClick={() => navigate('/app/leads/' + lead.id)} className="btn-primary flex-1 flex items-center justify-center gap-1.5 text-xs py-2"><Eye className="w-3.5 h-3.5" /> View Details</button>
-                <button onClick={() => { addToast('info', 'Added to project. Manage in Projects page.'); }} className="btn-secondary px-2 py-2"><Plus className="w-3.5 h-3.5" /></button>
+                <div className="relative">
+                  <button onClick={() => setProjectDropdownLeadId(projectDropdownLeadId === lead.id ? null : lead.id)} className="btn-secondary px-2 py-2"><Plus className="w-3.5 h-3.5" /></button>
+                  {projectDropdownLeadId === lead.id && (
+                    <div className="absolute bottom-full mb-1 right-0 bg-navy-800 border border-navy-700 rounded-lg shadow-xl z-30 py-1 min-w-[180px]">
+                      {projects.length === 0 ? (
+                        <p className="px-3 py-2 text-xs text-navy-400">No projects</p>
+                      ) : (
+                        projects.map(p => (
+                          <button key={p.id} onClick={() => { addLeadToProject(lead.id, p.id); setProjectDropdownLeadId(null); addToast('success', `Added to ${p.name}`); }} className="w-full text-left px-3 py-2 text-xs text-navy-200 hover:bg-navy-700 hover:text-white transition-colors">
+                            {p.name}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -223,7 +239,22 @@ export default function LeadDiscovery() {
                         <Bookmark className={`w-4 h-4 ${lead.saved ? 'text-blue-400 fill-blue-400' : ''}`} />
                       </button>
                       <button onClick={() => navigate('/app/leads/' + lead.id)} className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700"><Eye className="w-4 h-4" /></button>
-                      <button onClick={() => addToast('info', 'Added to project')} className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700"><Plus className="w-4 h-4" /></button>
+                      <div className="relative">
+                        <button onClick={() => setProjectDropdownLeadId(projectDropdownLeadId === lead.id ? null : lead.id)} className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700"><Plus className="w-4 h-4" /></button>
+                        {projectDropdownLeadId === lead.id && (
+                          <div className="absolute top-full right-0 mt-1 bg-navy-800 border border-navy-700 rounded-lg shadow-xl z-30 py-1 min-w-[180px]">
+                            {projects.length === 0 ? (
+                              <p className="px-3 py-2 text-xs text-navy-400">No projects</p>
+                            ) : (
+                              projects.map(p => (
+                                <button key={p.id} onClick={() => { addLeadToProject(lead.id, p.id); setProjectDropdownLeadId(null); addToast('success', `Added to ${p.name}`); }} className="w-full text-left px-3 py-2 text-xs text-navy-200 hover:bg-navy-700 hover:text-white transition-colors">
+                                  {p.name}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

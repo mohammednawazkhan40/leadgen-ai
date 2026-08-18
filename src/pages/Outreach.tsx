@@ -1,12 +1,30 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { outreachCampaigns as initialCampaigns, leads } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import * as api from '../services/api';
 import { formatDate } from '../utils/helpers';
 import { generateOutreachMessage } from '../utils/ai';
 import { Send, Plus, Play, Pause, Trash2, Edit, Eye, Copy, Mail, MessageSquare, Phone, Calendar, Users, TrendingUp, AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, Sparkles, Loader2, Wand2, BookOpen, BarChart3 } from 'lucide-react';
 import type { OutreachCampaign } from '../types';
 
 interface Campaign extends OutreachCampaign {}
+
+interface DbCampaign {
+  id: string;
+  name: string;
+  subject?: string;
+  template: string;
+  status: string;
+  target_audience?: string;
+  total_sent: number;
+  total_opened: number;
+  total_replied: number;
+  total_booked: number;
+  total_unsubscribed?: number;
+  created_at: string;
+  last_updated?: string;
+  category?: string;
+}
 
 const tokenSamples: Record<string, string> = {
   '{{first_name}}': 'John',
@@ -18,9 +36,47 @@ const tokenSamples: Record<string, string> = {
 
 const categories = ['All', 'AI Agents', 'LLMs & RAG', 'AI Automation', 'Machine Learning', 'Chatbot Dev'];
 
+function dbToCampaign(row: DbCampaign): Campaign {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category || '',
+    template: row.template,
+    status: row.status as Campaign['status'],
+    sent: row.total_sent || 0,
+    opened: row.total_opened || 0,
+    replied: row.total_replied || 0,
+    bookedCall: row.total_booked || 0,
+    unsubscribed: row.total_unsubscribed || 0,
+    createdAt: row.created_at,
+    lastUpdated: row.last_updated,
+    subject: row.subject,
+    target_audience: row.target_audience,
+  };
+}
+
+function campaignToDb(c: Partial<Campaign>): Record<string, unknown> {
+  const db: Record<string, unknown> = {};
+  if (c.name !== undefined) db.name = c.name;
+  if (c.category !== undefined) db.category = c.category;
+  if (c.template !== undefined) db.template = c.template;
+  if (c.status !== undefined) db.status = c.status;
+  if (c.subject !== undefined) db.subject = c.subject;
+  if (c.target_audience !== undefined) db.target_audience = c.target_audience;
+  if (c.sent !== undefined) db.total_sent = c.sent;
+  if (c.opened !== undefined) db.total_opened = c.opened;
+  if (c.replied !== undefined) db.total_replied = c.replied;
+  if (c.bookedCall !== undefined) db.total_booked = c.bookedCall;
+  if (c.unsubscribed !== undefined) db.total_unsubscribed = c.unsubscribed;
+  db.last_updated = new Date().toISOString();
+  return db;
+}
+
 export default function Outreach() {
   const { addToast, leads: contextLeads } = useApp();
-  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns as Campaign[]);
+  const { user } = useAuth();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [catFilter, setCatFilter] = useState('All');
   const [preview, setPreview] = useState(false);
@@ -29,6 +85,15 @@ export default function Outreach() {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+    api.fetchCampaigns(user.id)
+      .then(data => setCampaigns(data.map(dbToCampaign)))
+      .catch(() => addToast('error', 'Failed to load campaigns'))
+      .finally(() => setLoading(false));
+  }, [user, addToast]);
 
   const insertToken = (token: string) => {
     const ta = textareaRef.current;
@@ -49,14 +114,13 @@ export default function Outreach() {
   );
 
   const handleAiGenerate = () => {
-    const leadPool = contextLeads.length > 0 ? contextLeads : leads;
-    if (leadPool.length === 0) {
+    if (contextLeads.length === 0) {
       addToast('error', 'No leads available for AI generation');
       return;
     }
     setAiGenerating(true);
     setTimeout(() => {
-      const message = generateOutreachMessage(leadPool[0], 'Alex Morgan', 'Nexus AI Solutions');
+      const message = generateOutreachMessage(contextLeads[0], 'Alex Morgan', 'Nexus AI Solutions');
       setForm(p => ({ ...p, template: message }));
       setAiGenerating(false);
       addToast('success', 'AI outreach message generated');
@@ -68,23 +132,19 @@ export default function Outreach() {
     }, 1500);
   };
 
-  const save = (activate: boolean) => {
+  const save = async (activate: boolean) => {
     if (!form.name.trim()) {
       addToast('error', 'Campaign name is required');
       return;
     }
+    if (!user) return;
     const now = new Date().toISOString();
     if (editing) {
-      setCampaigns(prev =>
-        prev.map(c =>
-          c.id === editing
-            ? { ...c, name: form.name, category: form.category, template: form.template, status: activate ? 'active' : c.status, lastUpdated: now }
-            : c
-        )
-      );
+      const updates = campaignToDb({ name: form.name, category: form.category, template: form.template, status: activate ? 'active' : undefined });
+      const updated = await api.updateCampaign(editing, updates);
+      setCampaigns(prev => prev.map(c => c.id === editing ? { ...dbToCampaign(updated as DbCampaign) } : c));
     } else {
-      const newC: Campaign = {
-        id: 'oc' + Date.now(),
+      const newDb = await api.createCampaign(user.id, campaignToDb({
         name: form.name,
         category: form.category,
         template: form.template,
@@ -94,10 +154,8 @@ export default function Outreach() {
         replied: 0,
         bookedCall: 0,
         unsubscribed: 0,
-        createdAt: now,
-        lastUpdated: now,
-      };
-      setCampaigns(prev => [newC, ...prev]);
+      }));
+      setCampaigns(prev => [dbToCampaign({ ...newDb, category: form.category } as DbCampaign), ...prev]);
     }
     setForm({ name: '', category: 'AI Agents', template: '' });
     setEditing(null);
@@ -106,18 +164,17 @@ export default function Outreach() {
     addToast('success', activate ? 'Campaign activated' : 'Campaign saved as draft');
   };
 
-  const toggleStatus = (id: string) => {
-    setCampaigns(prev =>
-      prev.map(c =>
-        c.id === id
-          ? { ...c, status: c.status === 'active' ? 'paused' : 'active', lastUpdated: new Date().toISOString() }
-          : c
-      )
-    );
+  const toggleStatus = async (id: string) => {
+    const c = campaigns.find(c => c.id === id);
+    if (!c) return;
+    const newStatus = c.status === 'active' ? 'paused' : 'active';
+    await api.updateCampaign(id, campaignToDb({ status: newStatus }));
+    setCampaigns(prev => prev.map(c => c.id === id ? { ...c, status: newStatus, lastUpdated: new Date().toISOString() } : c));
     addToast('success', 'Campaign status updated');
   };
 
-  const deleteCampaign = (id: string) => {
+  const deleteCampaign = async (id: string) => {
+    await api.deleteCampaign(id);
     setCampaigns(prev => prev.filter(c => c.id !== id));
     addToast('info', 'Campaign deleted');
   };

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { teamMembers as initialMembers, currentUser } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import * as api from '../services/api';
 import { TeamMember, UserRole } from '../types';
 import {
   Users,
@@ -48,15 +49,29 @@ function getInitials(name: string) {
 
 function TeamMembersSection() {
   const { addToast } = useApp();
-  const [members, setMembers] = useState<TeamMember[]>(initialMembers);
+  const { user } = useAuth();
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>('user');
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
-  const handleInvite = () => {
-    if (!inviteEmail.trim()) return;
+  useEffect(() => {
+    if (!user) return;
+    api.fetchTeamMembers(user.id).then(data => {
+      setMembers(data.map((m: Record<string, unknown>) => ({
+        id: m.id as string,
+        name: (m.name as string) || '',
+        email: (m.email as string) || '',
+        avatar: (m.avatar as string) || '',
+        role: (m.role as UserRole) || 'user',
+      })));
+    }).catch(() => {});
+  }, [user]);
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim() || !user) return;
     const newMember: TeamMember = {
       id: `u${Date.now()}`,
       name: inviteName.trim() || inviteEmail.split('@')[0],
@@ -64,7 +79,17 @@ function TeamMembersSection() {
       avatar: '',
       role: inviteRole,
     };
-    setMembers([...members, newMember]);
+    try {
+      const data = await api.addTeamMember(user.id, {
+        name: newMember.name,
+        email: newMember.email,
+        avatar: '',
+        role: newMember.role,
+      });
+      setMembers([...members, { ...newMember, id: data.id }]);
+    } catch {
+      setMembers([...members, newMember]);
+    }
     setInviteName('');
     setInviteEmail('');
     setInviteRole('user');
@@ -77,10 +102,11 @@ function TeamMembersSection() {
     addToast('success', 'Role updated');
   };
 
-  const handleRemove = (id: string) => {
-    if (id === currentUser.id) return;
+  const handleRemove = async (id: string) => {
+    if (id === user?.id) return;
     setMembers(members.filter(m => m.id !== id));
     setConfirmRemoveId(null);
+    try { await api.removeTeamMember(id); } catch {}
     addToast('success', 'Member removed');
   };
 
@@ -151,7 +177,7 @@ function TeamMembersSection() {
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-white font-medium">{member.name}</p>
-                  {member.id === currentUser.id && (
+                  {member.id === user?.id && (
                     <span className="text-navy-500 text-xs">(You)</span>
                   )}
                 </div>
@@ -171,7 +197,7 @@ function TeamMembersSection() {
               <span className={`badge border text-xs ${roleColors[member.role]}`}>
                 {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
               </span>
-              {member.id !== currentUser.id && (
+              {member.id !== user?.id && (
                 confirmRemoveId === member.id ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -206,13 +232,28 @@ function TeamMembersSection() {
 
 function LeadScoringSection() {
   const { addToast } = useApp();
-  const savedRules = JSON.parse(localStorage.getItem('leadgen_scoring_rules') || 'null');
-  const [intentWeight, setIntentWeight] = useState(savedRules?.intentWeight ?? 30);
-  const [budgetWeight, setBudgetWeight] = useState(savedRules?.budgetWeight ?? 25);
-  const [urgencyWeight, setUrgencyWeight] = useState(savedRules?.urgencyWeight ?? 20);
-  const [technicalWeight, setTechnicalWeight] = useState(savedRules?.technicalWeight ?? 25);
-  const [minScore, setMinScore] = useState(savedRules?.minScore ?? 60);
-  const [autoQualify, setAutoQualify] = useState(savedRules?.autoQualify ?? true);
+  const { user } = useAuth();
+  const [intentWeight, setIntentWeight] = useState(30);
+  const [budgetWeight, setBudgetWeight] = useState(25);
+  const [urgencyWeight, setUrgencyWeight] = useState(20);
+  const [technicalWeight, setTechnicalWeight] = useState(25);
+  const [minScore, setMinScore] = useState(60);
+  const [autoQualify, setAutoQualify] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    api.fetchSettings(user.id).then(data => {
+      if (data?.scoring_rules) {
+        const r = data.scoring_rules;
+        setIntentWeight(r.intentWeight ?? 30);
+        setBudgetWeight(r.budgetWeight ?? 25);
+        setUrgencyWeight(r.urgencyWeight ?? 20);
+        setTechnicalWeight(r.technicalWeight ?? 25);
+        setMinScore(r.minScore ?? 60);
+        setAutoQualify(r.autoQualify ?? true);
+      }
+    }).catch(() => {});
+  }, [user]);
 
   const totalWeight = intentWeight + budgetWeight + urgencyWeight + technicalWeight;
 
@@ -220,10 +261,15 @@ function LeadScoringSection() {
     (85 * intentWeight + 72 * budgetWeight + 68 * urgencyWeight + 90 * technicalWeight) / totalWeight
   ) : 0;
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!user) return;
     const rules = { intentWeight, budgetWeight, urgencyWeight, technicalWeight, minScore, autoQualify };
-    localStorage.setItem('leadgen_scoring_rules', JSON.stringify(rules));
-    addToast('success', 'Scoring rules saved');
+    try {
+      await api.upsertSettings(user.id, { scoring_rules: rules });
+      addToast('success', 'Scoring rules saved');
+    } catch {
+      addToast('error', 'Failed to save scoring rules');
+    }
   };
 
   return (
@@ -327,7 +373,7 @@ function LeadScoringSection() {
 
 function TargetKeywordsSection() {
   const { addToast } = useApp();
-  const savedKeywords = JSON.parse(localStorage.getItem('leadgen_keywords') || 'null');
+  const { user } = useAuth();
   const defaultKeywords = [
     'AI agent developer',
     'LLM engineer',
@@ -338,9 +384,18 @@ function TargetKeywordsSection() {
     'NLP specialist',
     'computer vision',
   ];
-  const [keywords, setKeywords] = useState<string[]>(savedKeywords ?? defaultKeywords);
+  const [keywords, setKeywords] = useState<string[]>(defaultKeywords);
   const [newKeyword, setNewKeyword] = useState('');
   const [suggested] = useState(['AI engineer', 'deep learning', 'transformer models', 'vector database', 'fine-tuning']);
+
+  useEffect(() => {
+    if (!user) return;
+    api.fetchSettings(user.id).then(data => {
+      if (data?.keywords && Array.isArray(data.keywords)) {
+        setKeywords(data.keywords);
+      }
+    }).catch(() => {});
+  }, [user]);
 
   const removeKeyword = (kw: string) => setKeywords(keywords.filter(k => k !== kw));
 
@@ -358,9 +413,14 @@ function TargetKeywordsSection() {
     }
   };
 
-  const handleSave = () => {
-    localStorage.setItem('leadgen_keywords', JSON.stringify(keywords));
-    addToast('success', 'Keywords saved');
+  const handleSave = async () => {
+    if (!user) return;
+    try {
+      await api.upsertSettings(user.id, { keywords });
+      addToast('success', 'Keywords saved');
+    } catch {
+      addToast('error', 'Failed to save keywords');
+    }
   };
 
   return (
@@ -429,19 +489,28 @@ function TargetKeywordsSection() {
 
 function NotificationsSection() {
   const { addToast } = useApp();
-  const savedPrefs = JSON.parse(localStorage.getItem('leadgen_notifications') || 'null');
+  const { user } = useAuth();
   const [prefs, setPrefs] = useState({
-    newLeads: savedPrefs?.newLeads ?? true,
-    dailyDigest: savedPrefs?.dailyDigest ?? true,
-    weeklySummary: savedPrefs?.weeklySummary ?? false,
-    outreachReplies: savedPrefs?.outreachReplies ?? true,
-    pipelineUpdates: savedPrefs?.pipelineUpdates ?? true,
-    teamActivity: savedPrefs?.teamActivity ?? false,
-    emailEnabled: savedPrefs?.emailEnabled ?? true,
-    inAppEnabled: savedPrefs?.inAppEnabled ?? true,
-    quietStart: savedPrefs?.quietStart ?? '22:00',
-    quietEnd: savedPrefs?.quietEnd ?? '07:00',
+    newLeads: true,
+    dailyDigest: true,
+    weeklySummary: false,
+    outreachReplies: true,
+    pipelineUpdates: true,
+    teamActivity: false,
+    emailEnabled: true,
+    inAppEnabled: true,
+    quietStart: '22:00',
+    quietEnd: '07:00',
   });
+
+  useEffect(() => {
+    if (!user) return;
+    api.fetchSettings(user.id).then(data => {
+      if (data?.notifications) {
+        setPrefs(prev => ({ ...prev, ...data.notifications }));
+      }
+    }).catch(() => {});
+  }, [user]);
 
   const toggle = (key: keyof typeof prefs) => {
     if (typeof prefs[key] === 'boolean') {
@@ -449,9 +518,14 @@ function NotificationsSection() {
     }
   };
 
-  const handleSave = () => {
-    localStorage.setItem('leadgen_notifications', JSON.stringify(prefs));
-    addToast('success', 'Notification preferences saved');
+  const handleSave = async () => {
+    if (!user) return;
+    try {
+      await api.upsertSettings(user.id, { notifications: prefs });
+      addToast('success', 'Notification preferences saved');
+    } catch {
+      addToast('error', 'Failed to save notification preferences');
+    }
   };
 
   const notifications = [
