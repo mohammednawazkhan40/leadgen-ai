@@ -449,13 +449,13 @@ export default function Outreach() {
                   <td className="py-3 text-navy-400">{formatDate(c.lastUpdated || '')}</td>
                   <td className="py-3">
                     <div className="flex gap-1 justify-end">
-                      <button onClick={() => startEdit(c)} className="p-1.5 rounded-lg hover:bg-navy-700 text-navy-400 hover:text-white transition-colors" title="Edit">
+                      <button onClick={() => startEdit(c)} className="p-2 rounded-lg hover:bg-navy-700 text-navy-400 hover:text-white transition-colors" title="Edit">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button onClick={() => toggleStatus(c.id)} className="p-1.5 rounded-lg hover:bg-navy-700 text-navy-400 hover:text-white transition-colors" title={c.status === 'active' ? 'Pause' : 'Resume'}>
+                      <button onClick={() => toggleStatus(c.id)} className="p-2 rounded-lg hover:bg-navy-700 text-navy-400 hover:text-white transition-colors" title={c.status === 'active' ? 'Pause' : 'Resume'}>
                         {c.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                       </button>
-                      <button onClick={() => deleteCampaign(c.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-navy-400 hover:text-red-400 transition-colors" title="Delete">
+                      <button onClick={() => deleteCampaign(c.id)} className="p-2 rounded-lg hover:bg-red-500/10 text-navy-400 hover:text-red-400 transition-colors" title="Delete">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

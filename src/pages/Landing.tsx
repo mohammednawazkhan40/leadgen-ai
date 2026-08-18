@@ -463,7 +463,7 @@ export default function Landing() {
             {pricingTiers.map((tier) => (
               <div
                 key={tier.name}
-                className={`relative flex flex-col rounded-2xl border p-8 ${
+                className={`relative flex flex-col rounded-2xl border p-6 sm:p-8 ${
                   tier.featured
                     ? 'border-blue-500/30 bg-blue-500/5 shadow-xl shadow-blue-500/5'
                     : 'border-white/5 bg-white/[0.02]'

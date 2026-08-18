@@ -223,61 +223,93 @@ export default function Dashboard() {
             <Link to="/app/leads" className="text-blue-400 hover:text-blue-300 mt-2 inline-block">Add Leads →</Link>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-5 px-5">
-            <table className="w-full text-sm min-w-[700px]">
-              <thead>
-                <tr className="text-left text-gray-400 border-b border-gray-800">
-                  <th className="pb-3 font-medium">Company / Person</th>
-                  <th className="pb-3 font-medium">Project</th>
-                  <th className="pb-3 font-medium">Category</th>
-                  <th className="pb-3 font-medium">Budget</th>
-                  <th className="pb-3 font-medium">Score</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leads.slice(0, 6).map((lead) => (
-                  <tr
-                    key={lead.id}
-                    onClick={() => navigate('/app/leads/' + lead.id)}
-                    className="border-b border-gray-800/50 hover:bg-gray-800/30 cursor-pointer transition-colors"
-                  >
-                    <td className="py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 text-xs font-semibold shrink-0">
-                          {lead.company.charAt(0)}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-white truncate">{lead.company}</p>
-                          <p className="text-xs text-gray-400 truncate">{lead.contactName}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 text-gray-300 max-w-[200px] truncate">{lead.title}</td>
-                    <td className="py-3"><span className="badge bg-blue-500/10 text-blue-400">{lead.aiCategory}</span></td>
-                    <td className="py-3 text-gray-300">{formatCurrency(lead.budgetMin || 0)}-{formatCurrency(lead.budgetMax || 0)}</td>
-                    <td className="py-3">
-                      <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${getScoreColor(lead.scoreOverall || 0)}`}>
-                        <span className={`w-2 h-2 rounded-full ${(lead.scoreOverall || 0) >= 80 ? 'bg-emerald-400' : (lead.scoreOverall || 0) >= 60 ? 'bg-blue-400' : (lead.scoreOverall || 0) >= 40 ? 'bg-amber-400' : 'bg-red-400'}`} />
-                        {lead.scoreOverall || 0}
-                      </span>
-                    </td>
-                    <td className="py-3"><span className={`badge text-xs ${getStatusColor(lead.status)}`}>{getStatusLabel(lead.status)}</span></td>
-                    <td className="py-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex gap-1">
-                        <Link to={`/app/leads/${lead.id}`} className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"><Eye className="w-4 h-4" /></Link>
-                        <button onClick={() => toggleSaveLead(lead.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
-                          {lead.saved ? <BookmarkCheck className="w-4 h-4 text-blue-400" /> : <Bookmark className="w-4 h-4" />}
-                        </button>
-                        {lead.source && <a href={lead.source} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"><ExternalLink className="w-4 h-4" /></a>}
-                      </div>
-                    </td>
+          <>
+            <div className="hidden md:block overflow-x-auto -mx-5 px-5">
+              <table className="w-full text-sm min-w-[700px]">
+                <thead>
+                  <tr className="text-left text-gray-400 border-b border-gray-800">
+                    <th className="pb-3 font-medium">Company / Person</th>
+                    <th className="pb-3 font-medium">Project</th>
+                    <th className="pb-3 font-medium">Category</th>
+                    <th className="pb-3 font-medium">Budget</th>
+                    <th className="pb-3 font-medium">Score</th>
+                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {leads.slice(0, 6).map((lead) => (
+                    <tr
+                      key={lead.id}
+                      onClick={() => navigate('/app/leads/' + lead.id)}
+                      className="border-b border-gray-800/50 hover:bg-gray-800/30 cursor-pointer transition-colors"
+                    >
+                      <td className="py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 text-xs font-semibold shrink-0">
+                            {lead.company.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-white truncate">{lead.company}</p>
+                            <p className="text-xs text-gray-400 truncate">{lead.contactName}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 text-gray-300 max-w-[200px] truncate">{lead.title}</td>
+                      <td className="py-3"><span className="badge bg-blue-500/10 text-blue-400">{lead.aiCategory}</span></td>
+                      <td className="py-3 text-gray-300">{formatCurrency(lead.budgetMin || 0)}-{formatCurrency(lead.budgetMax || 0)}</td>
+                      <td className="py-3">
+                        <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${getScoreColor(lead.scoreOverall || 0)}`}>
+                          <span className={`w-2 h-2 rounded-full ${(lead.scoreOverall || 0) >= 80 ? 'bg-emerald-400' : (lead.scoreOverall || 0) >= 60 ? 'bg-blue-400' : (lead.scoreOverall || 0) >= 40 ? 'bg-amber-400' : 'bg-red-400'}`} />
+                          {lead.scoreOverall || 0}
+                        </span>
+                      </td>
+                      <td className="py-3"><span className={`badge text-xs ${getStatusColor(lead.status)}`}>{getStatusLabel(lead.status)}</span></td>
+                      <td className="py-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1">
+                          <Link to={`/app/leads/${lead.id}`} className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"><Eye className="w-4 h-4" /></Link>
+                          <button onClick={() => toggleSaveLead(lead.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
+                            {lead.saved ? <BookmarkCheck className="w-4 h-4 text-blue-400" /> : <Bookmark className="w-4 h-4" />}
+                          </button>
+                          {lead.source && <a href={lead.source} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"><ExternalLink className="w-4 h-4" /></a>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden space-y-3">
+              {leads.slice(0, 6).map((lead) => (
+                <Link
+                  key={lead.id}
+                  to={'/app/leads/' + lead.id}
+                  className="block bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 hover:border-gray-600 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 text-sm font-semibold shrink-0">
+                        {lead.company.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-white truncate">{lead.company}</p>
+                        <p className="text-xs text-gray-400 truncate">{lead.contactName}</p>
+                      </div>
+                    </div>
+                    <span className={`badge text-xs ${getStatusColor(lead.status)}`}>{getStatusLabel(lead.status)}</span>
+                  </div>
+                  <p className="text-sm text-gray-300 truncate mb-2">{lead.title}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full">{lead.aiCategory}</span>
+                      <span className={`text-xs font-medium ${getScoreColor(lead.scoreOverall || 0)}`}>Score {lead.scoreOverall || 0}</span>
+                    </div>
+                    <span className="text-xs text-gray-400">{formatCurrency(lead.budgetMin || 0)}-{formatCurrency(lead.budgetMax || 0)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
