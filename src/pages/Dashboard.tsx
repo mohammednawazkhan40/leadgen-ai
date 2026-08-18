@@ -134,7 +134,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-gray-400 mt-1 text-sm">{getGreeting()}, {profile?.full_name || 'Alex'}. Here's your pipeline overview.</p>
+        <p className="text-gray-400 mt-1 text-sm">{getGreeting()}, {profile?.full_name || user?.email?.split('@')[0] || 'there'}. Here's your pipeline overview.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

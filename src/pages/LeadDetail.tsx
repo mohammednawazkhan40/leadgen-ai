@@ -1,16 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { teamMembers } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { fetchTeamMembers } from '../services/api';
 import { formatCurrency, formatDate, getScoreColor, getStatusColor, getStatusLabel } from '../utils/helpers';
 import { generateOutreachMessage, generateLeadSummary, calculateLeadScore, formatRelativeTime } from '../utils/ai';
+import type { TeamMember } from '../types';
 import { ArrowLeft, MapPin, Calendar, DollarSign, Bookmark, BookmarkCheck, FolderPlus, ExternalLink, Download, Send, Brain, CheckCircle, Tag, User, Clock, Sparkles, Plus, X, Briefcase, Building2, Globe, Loader2 } from 'lucide-react';
 
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { leads, projects, addToast, updateLeadStatus, addNote, toggleSaveLead, addTag, removeTag, setReminder, reassignLead, addLeadToProject } = useApp();
+  const { user, profile } = useAuth();
   const lead = leads.find(l => l.id === id);
+  const senderName = profile?.full_name || user?.email?.split('@')[0] || 'User';
+  const companyName = profile?.company || 'LeadGen AI';
+
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      fetchTeamMembers(user.id).then(setTeamMembers).catch(() => {});
+    }
+  }, [user]);
 
   const [noteContent, setNoteContent] = useState('');
   const [showNoteForm, setShowNoteForm] = useState(false);
@@ -36,7 +49,7 @@ export default function LeadDetail() {
 
   const handleAddNote = () => {
     if (!noteContent.trim()) return;
-    addNote(lead.id, noteContent.trim(), 'Alex Morgan');
+    addNote(lead.id, noteContent.trim(), senderName);
     setNoteContent('');
     setShowNoteForm(false);
     addToast('success', 'Note added');
@@ -69,7 +82,7 @@ export default function LeadDetail() {
   const handleGenerateAI = () => {
     setGenerating(true);
     setTimeout(() => {
-      const message = generateOutreachMessage(lead, 'Alex Morgan', 'Nexus AI Solutions');
+      const message = generateOutreachMessage(lead, senderName, companyName);
       setMessageDraft(message);
       setGenerating(false);
       addToast('success', 'AI message generated — review and edit before sending');
@@ -80,7 +93,7 @@ export default function LeadDetail() {
     if (!messageDraft.trim()) { addToast('error', 'Please write or generate a message first'); return; }
     setSending(true);
     setTimeout(() => {
-      addNote(lead.id, messageDraft.trim(), 'Alex Morgan');
+      addNote(lead.id, messageDraft.trim(), senderName);
       setMessageDraft('');
       setSending(false);
       addToast('success', 'Message sent for review. You will be notified before it is sent to the recipient.');

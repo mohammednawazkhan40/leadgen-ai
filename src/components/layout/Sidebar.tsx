@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Search, Bookmark, FolderKanban, Send, BarChart3, Plug, Settings, Zap, X, Download } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -63,6 +64,9 @@ function downloadLogo(format: 'svg' | 'png') {
 
 export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen, addToast } = useApp();
+  const { user, profile } = useAuth();
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
+  const initials = displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <>
@@ -141,10 +145,10 @@ export default function Sidebar() {
           </p>
           <div className="flex items-center gap-3 px-1">
             <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 text-xs font-semibold">
-              AM
+              {initials}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-white truncate">Alex Morgan</p>
+              <p className="text-sm font-medium text-white truncate">{displayName}</p>
               <p className="text-xs text-gray-500 truncate">admin</p>
             </div>
           </div>

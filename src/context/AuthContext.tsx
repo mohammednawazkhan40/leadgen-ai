@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, company: company || 'Nexus AI Solutions' } },
+      options: { data: { full_name: fullName, company: company || 'LeadGen AI' } },
     });
     if (error) return { error };
     if (data.user && !data.session) {

@@ -31,7 +31,6 @@ const tokenSamples: Record<string, string> = {
   '{{company}}': 'Acme Corp',
   '{{project_title}}': 'AI Agent Development Project',
   '{{relevant_skill}}': 'RAG Architecture',
-  '{{sender_name}}': 'Alex Morgan',
 };
 
 const categories = ['All', 'AI Agents', 'LLMs & RAG', 'AI Automation', 'Machine Learning', 'Chatbot Dev'];
@@ -74,7 +73,9 @@ function campaignToDb(c: Partial<Campaign>): Record<string, unknown> {
 
 export default function Outreach() {
   const { addToast, leads: contextLeads } = useApp();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const senderName = profile?.full_name || user?.email?.split('@')[0] || 'User';
+  const companyName = profile?.company || 'LeadGen AI';
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -120,7 +121,7 @@ export default function Outreach() {
     }
     setAiGenerating(true);
     setTimeout(() => {
-      const message = generateOutreachMessage(contextLeads[0], 'Alex Morgan', 'Nexus AI Solutions');
+      const message = generateOutreachMessage(contextLeads[0], senderName, companyName);
       setForm(p => ({ ...p, template: message }));
       setAiGenerating(false);
       addToast('success', 'AI outreach message generated');
