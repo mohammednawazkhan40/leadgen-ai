@@ -4,17 +4,21 @@ import App from './App'
 import './index.css'
 
 const path = window.location.pathname;
-const isCallbackPath = path.endsWith('/linkedin-callback') || path.includes('/leadgen-ai/linkedin-callback');
+const search = window.location.search;
+const isDirectCallback = path.endsWith('/linkedin-callback') || path.includes('/leadgen-ai/linkedin-callback');
+const isGithubPagesRedirect = search.includes('/linkedin-callback') || search.includes('linkedin-callback');
 
-if (isCallbackPath && window.location.search.includes('code=')) {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  const error = params.get('error');
-  const state = params.get('state');
-  const newHash = error
-    ? `#/linkedin-callback?error=${encodeURIComponent(error)}&error_description=${encodeURIComponent(params.get('error_description') || '')}`
-    : `#/linkedin-callback?code=${encodeURIComponent(code || '')}${state ? `&state=${state}` : ''}`;
-  window.history.replaceState({}, '', newHash);
+if ((isDirectCallback || isGithubPagesRedirect) && (search.includes('code=') || search.includes('&code='))) {
+  const allParams = new URLSearchParams(search.includes('/linkedin-callback') ? search.substring(search.indexOf('/linkedin-callback')) : search);
+  const code = allParams.get('code');
+  const error = allParams.get('error');
+  const state = allParams.get('state');
+  if (code || error) {
+    const newHash = error
+      ? `#/linkedin-callback?error=${encodeURIComponent(error)}&error_description=${encodeURIComponent(allParams.get('error_description') || '')}`
+      : `#/linkedin-callback?code=${encodeURIComponent(code || '')}${state ? `&state=${state}` : ''}`;
+    window.history.replaceState({}, '', newHash);
+  }
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

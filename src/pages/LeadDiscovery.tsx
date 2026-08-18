@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { formatCurrency, formatDate, getScoreColor, truncate } from '../utils/helpers';
+import { formatCurrency, formatDate, getScoreColor } from '../utils/helpers';
 import { Search, Filter, Grid, List, MapPin, Calendar, DollarSign, Bookmark, Eye, Plus, X, ExternalLink, Building2, Briefcase, Loader2 } from 'lucide-react';
 
 const suggestions = ['AI agent developer needed', 'LLM engineer for enterprise', 'RAG system architect', 'Chatbot development project', 'Machine learning consultant', 'NLP specialist for healthcare'];

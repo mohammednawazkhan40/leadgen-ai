@@ -28,7 +28,7 @@ export default function SignIn() {
       return;
     }
     addToast("success", "Signed in successfully!");
-    navigate("/#/app/dashboard");
+    navigate("/app/dashboard");
   };
 
   return (

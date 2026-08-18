@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { teamMembers } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { fetchTeamMembers } from '../services/api';
 import {
   formatCurrency,
   formatDate,
@@ -10,7 +11,7 @@ import {
   getStatusLabel,
   generateId,
 } from '../utils/helpers';
-import { LeadStatus, Project } from '../types';
+import { LeadStatus, Project, TeamMember } from '../types';
 import {
   FolderKanban,
   Plus,
@@ -94,7 +95,9 @@ function getCompanyColor(company: string): string {
 
 export default function Projects() {
   const { projects, updateProjectStatus, addToast, addProject } = useApp();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [search, setSearch] = useState('');
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
@@ -111,8 +114,18 @@ export default function Projects() {
     value: '',
     priority: 'medium' as Project['priority'],
     status: 'new' as LeadStatus,
-    ownerId: teamMembers[0].id,
+    ownerId: '',
   });
+
+  useEffect(() => {
+    if (user) {
+      fetchTeamMembers(user.id).then(m => {
+        const members = m.map(t => ({ ...t, role: (t.role || 'member') as TeamMember['role'] }));
+        setTeamMembers(members);
+        setFormData(prev => ({ ...prev, ownerId: members[0]?.id || '' }));
+      }).catch(() => {});
+    }
+  }, [user]);
 
   const filterRef = useRef<HTMLDivElement>(null);
   const colMenuRef = useRef<HTMLDivElement>(null);
@@ -198,7 +211,7 @@ export default function Projects() {
       nextFollowUp: undefined,
     });
     addToast('success', 'Project created');
-    setFormData({ name: '', company: '', value: '', priority: 'medium', status: 'new', ownerId: teamMembers[0].id });
+    setFormData({ name: '', company: '', value: '', priority: 'medium', status: 'new', ownerId: teamMembers[0]?.id || '' });
     setShowAddModal(false);
   }
 

@@ -19,7 +19,14 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       fetchSettings(user.id).then(s => {
-        if (s?.integrations) setIntegrations(s.integrations);
+        if (s?.integrations && typeof s.integrations === 'object' && !Array.isArray(s.integrations)) {
+          const arr = Object.entries(s.integrations).map(([key, val]) => ({
+            type: key,
+            status: (val as Record<string, unknown>)?.connected ? 'connected' : 'disconnected',
+            name: key,
+          }));
+          setIntegrations(arr);
+        }
       }).catch(() => {});
     }
   }, [user]);
@@ -271,7 +278,7 @@ export default function Dashboard() {
                           <button onClick={() => toggleSaveLead(lead.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">
                             {lead.saved ? <BookmarkCheck className="w-4 h-4 text-blue-400" /> : <Bookmark className="w-4 h-4" />}
                           </button>
-                          {lead.source && <a href={lead.source} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"><ExternalLink className="w-4 h-4" /></a>}
+                          {lead.sourceUrl && <a href={lead.sourceUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"><ExternalLink className="w-4 h-4" /></a>}
                         </div>
                       </td>
                     </tr>

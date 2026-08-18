@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { exchangeLinkedInCode, fetchLinkedInProfile, storeLinkedInConnection } from '../services/linkedin';
@@ -9,8 +9,10 @@ export default function LinkedInCallback() {
   const { user } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Connecting to LinkedIn...');
+  const processedRef = useRef(false);
 
   useEffect(() => {
+    if (processedRef.current) return;
     let params = new URLSearchParams(window.location.search);
     if (!params.has('code') && !params.has('error') && window.location.hash) {
       const hashContent = window.location.hash.substring(1);
@@ -35,6 +37,7 @@ export default function LinkedInCallback() {
     }
 
     async function handleCallback() {
+      processedRef.current = true;
       try {
         setMessage('Exchanging authorization code...');
 
